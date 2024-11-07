@@ -40,56 +40,99 @@
         <ion-card-content>
           <div class="grid-container">
             <div class="grid">
-              <ion-grid v-if="tests.length > 0">
-                <ion-row style="border-bottom: 1px solid #ccc">
-                  <ion-col style="text-wrap: nowrap">الاسم</ion-col>
-                  <ion-col style="text-wrap: nowrap">الوقت</ion-col>
-                  <ion-col style="text-wrap: nowrap">
-                    تاريخ نهاية الامتحان
-                  </ion-col>
-                  <ion-col style="text-wrap: nowrap">المرحلة</ion-col>
-                  <ion-col style="text-wrap: nowrap">فترة/ترم</ion-col>
-                  <ion-col></ion-col>
-                </ion-row>
-                <ion-row
-                  v-for="(test, index) in tests"
-                  :key="index"
-                  :style="`${
-                    index === tests.length - 1
-                      ? 'border-bottom: none'
-                      : 'border-bottom: 1px solid #ccc'
-                  }`"
-                >
-                  <ion-col style="text-wrap: nowrap">
-                    {{ test.test_name }}
-                  </ion-col>
-                  <ion-col style="text-wrap: nowrap">
-                    {{ test.created_at }}
-                  </ion-col>
-                  <ion-col style="text-wrap: nowrap">
-                    {{ test.expire_date }}
-                  </ion-col>
-                  <ion-col style="text-wrap: nowrap">
-                    {{ grade(test.grade_id) }}
-                  </ion-col>
-                  <ion-col style="text-wrap: nowrap">
-                    {{ term(test.term_id) }}
-                  </ion-col>
-                  <ion-col style="text-wrap: nowrap">
-                    <ion-button @click="EditTest(test, !edit)">
-                      <ion-icon :icon="createOutline" />
-                    </ion-button>
-                    <ion-button color="danger" @click="DeleteTest(test.id)">
-                      <ion-icon :icon="trashOutline" />
-                    </ion-button>
-                    <ion-button color="secondary" @click="ViewTest(test.id)">
-                      <ion-icon :icon="eyeOutline" />
-                    </ion-button>
-                  </ion-col>
-                </ion-row>
-              </ion-grid>
-              <div class="noData" v-else>
-                <p>لا توجد بيانات حتى الان</p>
+              <div class="table-wrapper">
+                <ion-grid v-if="tests.length > 0">
+                  <ion-row
+                    class="table-header"
+                    style="border-bottom: 1px solid #ccc; min-width: 900px"
+                  >
+                    <ion-col
+                      class="header-cell"
+                      style="white-space: nowrap; min-width: 120px"
+                      >الاسم</ion-col
+                    >
+                    <ion-col
+                      class="header-cell"
+                      style="white-space: nowrap; min-width: 120px"
+                      >الوقت</ion-col
+                    >
+                    <ion-col
+                      class="header-cell"
+                      style="white-space: nowrap; min-width: 150px"
+                      >تاريخ نهاية الامتحان</ion-col
+                    >
+                    <ion-col
+                      class="header-cell"
+                      style="white-space: nowrap; min-width: 120px"
+                      >المرحلة</ion-col
+                    >
+                    <ion-col
+                      class="header-cell"
+                      style="white-space: nowrap; min-width: 120px"
+                      >فترة/ترم</ion-col
+                    >
+                    <ion-col
+                      class="header-cell"
+                      style="white-space: nowrap; min-width: 150px"
+                    ></ion-col>
+                  </ion-row>
+
+                  <ion-row
+                    v-for="(test, index) in tests"
+                    :key="index"
+                    :style="`${
+                      index === tests.length - 1
+                        ? 'border-bottom: none'
+                        : 'border-bottom: 1px solid #ccc'
+                    }`"
+                    class="ion-align-items-start"
+                    style="min-width: 900px"
+                  >
+                    <ion-col
+                      class="data-cell"
+                      style="white-space: nowrap; min-width: 120px"
+                      >{{ test.test_name }}</ion-col
+                    >
+                    <ion-col
+                      class="data-cell"
+                      style="white-space: nowrap; min-width: 120px"
+                      >{{ test.created_at }}</ion-col
+                    >
+                    <ion-col
+                      class="data-cell"
+                      style="white-space: nowrap; min-width: 150px"
+                      >{{ test.expire_date }}</ion-col
+                    >
+                    <ion-col
+                      class="data-cell"
+                      style="white-space: nowrap; min-width: 120px"
+                      >{{ grade(test.grade_id) }}</ion-col
+                    >
+                    <ion-col
+                      class="data-cell"
+                      style="white-space: nowrap; min-width: 120px"
+                      >{{ term(test.term_id) }}</ion-col
+                    >
+                    <ion-col
+                      class="data-cell"
+                      style="white-space: nowrap; min-width: 150px"
+                    >
+                      <ion-button @click="EditTest(test, !edit)">
+                        <ion-icon :icon="createOutline" />
+                      </ion-button>
+                      <ion-button color="danger" @click="DeleteTest(test.id)">
+                        <ion-icon :icon="trashOutline" />
+                      </ion-button>
+                      <ion-button color="secondary" @click="ViewTest(test.id)">
+                        <ion-icon :icon="eyeOutline" />
+                      </ion-button>
+                    </ion-col>
+                  </ion-row>
+                </ion-grid>
+
+                <div class="noData" v-else>
+                  <p>لا توجد بيانات حتى الان</p>
+                </div>
               </div>
             </div>
           </div>
@@ -245,22 +288,29 @@ export default {
 };
 </script>
 <style>
-.noData {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  width: 100%;
-  font-family: Cairo;
-  font-size: 20px;
-}
 .grid-container {
-  overflow-x: auto;
   width: 100%;
 }
 
-.grid {
-  display: inline-block;
-  min-width: 600px; /* Adjust this value as needed */
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  padding: 8px;
+}
+
+.table-header {
+  font-weight: bold;
+}
+
+.header-cell,
+.data-cell {
+  padding: 8px;
+  text-align: center;
+}
+
+.buttons {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
 }
 </style>

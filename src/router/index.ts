@@ -22,10 +22,10 @@ const routes: Array<RouteRecordRaw> = [
     path: "/tests",
     component: () => import("../views/Tests.vue"),
   },
-  // {
-  //   path: "/grades",
-  //   component: () => import("../views/Grades.vue"),
-  // },
+  {
+    path: "/grades",
+    component: () => import("../views/Grades.vue"),
+  },
 ];
 
 const router = createRouter({

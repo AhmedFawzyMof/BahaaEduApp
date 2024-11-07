@@ -39,71 +39,126 @@
         <ion-card-content>
           <div class="grid-container">
             <div class="grid">
-              <ion-grid v-if="students.length > 0">
-                <ion-row>
-                  <ion-col style="text-wrap: nowrap">الاسم</ion-col>
-                  <ion-col style="text-wrap: nowrap">تم حظره</ion-col>
-                  <ion-col style="text-wrap: nowrap">هاتف ولي الامر</ion-col>
-                  <ion-col style="text-wrap: nowrap">سبب الحظر</ion-col>
-                  <ion-col></ion-col>
-                </ion-row>
-                <ion-row
-                  v-for="(student, index) in students"
-                  :key="student.id"
-                  :style="`${
-                    index === students.length - 1
-                      ? 'border-bottom: none'
-                      : 'border-bottom: 1px solid #ccc'
-                  }`"
-                >
-                  <ion-col
-                    style="
-                      text-wrap: nowrap;
-                      display: grid;
-                      place-items: center;
-                    "
-                    >{{ student.username }}</ion-col
+              <div class="table-wrapper">
+                <ion-grid v-if="students.length > 0">
+                  <ion-row
+                    class="table-header"
+                    style="border-bottom: 1px solid #ccc; min-width: 800px"
                   >
-                  <ion-col
-                    style="
-                      text-wrap: nowrap;
-                      display: grid;
-                      place-items: center;
-                    "
-                    >{{ student.isBlocked === 1 ? "نعم" : "لا" }}</ion-col
+                    <ion-col
+                      class="header-cell"
+                      style="white-space: nowrap; min-width: 150px"
+                      >الاسم</ion-col
+                    >
+                    <ion-col
+                      class="header-cell"
+                      style="white-space: nowrap; min-width: 100px"
+                      >تم حظره</ion-col
+                    >
+                    <ion-col
+                      class="header-cell"
+                      style="white-space: nowrap; min-width: 150px"
+                      >هاتف ولي الامر</ion-col
+                    >
+                    <ion-col
+                      class="header-cell"
+                      style="white-space: nowrap; min-width: 150px"
+                      >سبب الحظر</ion-col
+                    >
+                    <ion-col
+                      class="header-cell"
+                      style="white-space: nowrap; min-width: 100px"
+                    ></ion-col>
+                  </ion-row>
+
+                  <ion-row
+                    v-for="(student, index) in students"
+                    :key="student.id"
+                    :style="`${
+                      index === students.length - 1
+                        ? 'border-bottom: none'
+                        : 'border-bottom: 1px solid #ccc'
+                    }`"
+                    class="ion-align-items-start"
+                    style="min-width: 800px"
                   >
-                  <ion-col
-                    style="
-                      text-wrap: nowrap;
-                      display: grid;
-                      place-items: center;
-                    "
-                  >
-                    <a :href="`https://wa.me/+2${student.parent_phone}?`">
-                      {{ student.parent_phone }}
-                    </a>
-                  </ion-col>
-                  <ion-col style="display: grid; place-items: center">{{
-                    student.isBlocked === 1 ? student.BlockReason : ""
-                  }}</ion-col>
-                  <ion-col>
-                    <ion-button @click="Edit(student, !edit)">
-                      <ion-icon
-                        slot="icon-only"
-                        :icon="createOutline"
-                      ></ion-icon>
-                    </ion-button>
-                    <ion-button @click="Delete(student.id)" color="danger">
-                      <ion-icon
-                        slot="icon-only"
-                        :icon="trashOutline"
-                      ></ion-icon>
-                    </ion-button>
-                  </ion-col>
-                </ion-row>
-              </ion-grid>
-              <div class="noData" v-else>
-                <p>لا توجد بيانات حتى الان</p>
+                    <ion-col
+                      class="data-cell"
+                      style="
+                        white-space: nowrap;
+                        min-width: 150px;
+                        display: grid;
+                        place-items: center;
+                      "
+                    >
+                      {{ student.username }}
+                    </ion-col>
+                    <ion-col
+                      class="data-cell"
+                      style="
+                        white-space: nowrap;
+                        min-width: 100px;
+                        display: grid;
+                        place-items: center;
+                      "
+                    >
+                      {{ student.isBlocked === 1 ? "نعم" : "لا" }}
+                    </ion-col>
+                    <ion-col
+                      class="data-cell"
+                      style="
+                        white-space: nowrap;
+                        min-width: 150px;
+                        display: grid;
+                        place-items: center;
+                      "
+                    >
+                      <a :href="`https://wa.me/+2${student.parent_phone}?`">{{
+                        student.parent_phone
+                      }}</a>
+                    </ion-col>
+                    <ion-col
+                      class="data-cell"
+                      style="
+                        white-space: nowrap;
+                        min-width: 150px;
+                        display: grid;
+                        place-items: center;
+                      "
+                    >
+                      {{ student.isBlocked === 1 ? student.BlockReason : "" }}
+                    </ion-col>
+                    <ion-col
+                      class="data-cell"
+                      style="white-space: nowrap; min-width: 100px"
+                    >
+                      <div class="buttons">
+                        <ion-button @click="Edit(student, !edit)">
+                          <ion-icon
+                            slot="icon-only"
+                            :icon="createOutline"
+                          ></ion-icon>
+                        </ion-button>
+                        <ion-button @click="Delete(student.id)" color="danger">
+                          <ion-icon
+                            slot="icon-only"
+                            :icon="trashOutline"
+                          ></ion-icon>
+                        </ion-button>
+                        <ion-button @click="View(student.id)" color="primary">
+                          <ion-icon
+                            slot="icon-only"
+                            :icon="eyeOutline"
+                          ></ion-icon>
+                        </ion-button>
+                      </div>
+                    </ion-col>
+                  </ion-row>
+                </ion-grid>
+
+                <div class="noData" v-else>
+                  <p>لا توجد بيانات حتى الان</p>
+                </div>
               </div>
             </div>
           </div>
@@ -139,7 +194,12 @@ import {
   IonButton,
   IonIcon,
 } from "@ionic/vue";
-import { createOutline, trashOutline, addCircleOutline } from "ionicons/icons";
+import {
+  createOutline,
+  trashOutline,
+  addCircleOutline,
+  eyeOutline,
+} from "ionicons/icons";
 export default {
   name: "Students",
   components: {
@@ -172,6 +232,7 @@ export default {
       createOutline,
       trashOutline,
       addCircleOutline,
+      eyeOutline,
     };
   },
   mounted() {
@@ -239,22 +300,29 @@ export default {
 };
 </script>
 <style>
-.noData {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  width: 100%;
-  font-family: Cairo;
-  font-size: 20px;
-}
 .grid-container {
-  overflow-x: auto;
   width: 100%;
 }
 
-.grid {
-  display: inline-block;
-  min-width: 600px; /* Adjust this value as needed */
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  padding: 8px;
+}
+
+.table-header {
+  font-weight: bold;
+}
+
+.header-cell,
+.data-cell {
+  padding: 8px;
+  text-align: center;
+}
+
+.buttons {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
 }
 </style>
