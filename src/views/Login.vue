@@ -11,7 +11,7 @@
               label-placement="stacked"
               placeholder="أدخل اسم المستخدم"
               dir="rtl"
-              @ionChange="username = $event.target.value"
+              @ionChange="username = String($event.target.value) || ''"
             ></ion-input>
           </div>
           <div class="input" :class="{ error: error.password }">
@@ -21,7 +21,7 @@
               label="كلمة المرور"
               placeholder="أدخل كلمة المرور"
               dir="rtl"
-              @ionChange="password = $event.target.value"
+              @ionChange="password = String($event.target.value) || ''"
             >
               <ion-input-password-toggle slot="end"></ion-input-password-toggle>
             </ion-input>
@@ -50,7 +50,7 @@
 import { defineComponent, ref, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import axios from "../components/axios-config.ts";
+import axios from "../components/axios-config"; // Corrected import without .ts extension
 
 import {
   IonButtons,
@@ -65,6 +65,16 @@ import {
   IonInputPasswordToggle,
   IonAlert,
 } from "@ionic/vue";
+
+interface LoginResponse {
+  token: string;
+}
+
+interface ErrorObject {
+  message: string;
+  username: boolean;
+  password: boolean;
+}
 
 export default defineComponent({
   name: "Login",
@@ -90,7 +100,7 @@ export default defineComponent({
     const alertButtons = ref<string[]>(["موافق"]);
     const isOpen = ref<boolean>(false);
     const message = ref<string>("");
-    const error = ref({
+    const error = ref<ErrorObject>({
       message: "",
       username: false,
       password: false,
@@ -126,7 +136,7 @@ export default defineComponent({
 
       if (username.value !== "" && password.value !== "") {
         axios
-          .post("/teacher/login", {
+          .post<LoginResponse>("/teacher/login", {
             username: username.value,
             password: password.value,
           })
@@ -135,7 +145,8 @@ export default defineComponent({
             router.push("/dashboard");
           })
           .catch((error) => {
-            message.value = error.response.data.message;
+            message.value =
+              error.response?.data?.message || "An error occurred";
             setOpen(false);
             setOpen(true);
           });

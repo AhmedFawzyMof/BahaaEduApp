@@ -6,10 +6,7 @@
           <ion-list id="inbox-list" dir="rtl">
             <ion-list-header>Bahaa Education</ion-list-header>
 
-            <ion-menu-toggle
-              :auto-hide="false"
-              v-if="this.$store.state.isAuthenticated"
-            >
+            <ion-menu-toggle :auto-hide="false" v-if="isAuthenticated">
               <ion-item
                 v-for="link in listOfPages"
                 router-direction="root"
@@ -36,7 +33,7 @@
   </ion-app>
 </template>
 <script lang="ts">
-import { defineComponent, ref, onMounted } from "vue";
+import { defineComponent, ref, onMounted, computed } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 
@@ -86,6 +83,7 @@ export default defineComponent({
   setup() {
     const store = useStore();
     const router = useRouter();
+    const isAuthenticated = computed(() => store.state.isAuthenticated);
 
     const listOfPages = ref<Page[]>([
       { title: "لوحة التحكم", url: "/dashboard", icon: optionsOutline },
@@ -102,6 +100,7 @@ export default defineComponent({
     });
 
     return {
+      isAuthenticated,
       listOfPages,
     };
   },
