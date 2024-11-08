@@ -50,6 +50,7 @@
 import { defineComponent, ref, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import { Http } from "@capacitor-community/http";
 
 import {
   IonButtons,
@@ -64,10 +65,6 @@ import {
   IonInputPasswordToggle,
   IonAlert,
 } from "@ionic/vue";
-
-interface LoginResponse {
-  token: string;
-}
 
 interface ErrorObject {
   message: string;
@@ -135,38 +132,29 @@ export default defineComponent({
       }
 
       if (username.value !== "" && password.value !== "") {
-        const baseUrl = "https://bahaaedu-production.up.railway.app/api";
-
-        fetch(baseUrl + "/teacher/login", {
-          method: "POST",
+        const options = {
+          url: "https://bahaaedu-production.up.railway.app/api/teacher/login",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
+          data: {
             username: username.value,
             password: password.value,
-          }),
-        })
-          .then((response) => {
-            if (!response.ok) {
-              return response.json().then((errorData) => {
-                message.value = errorData.message || "خطأ في المحاولة للدخول";
-                setOpen(true);
-                throw new Error(errorData.message);
-              });
-            }
-            return response.json();
-          })
-          .then((data) => {
-            if (data.token) {
-              store.commit("setToken", data.token);
-              router.push("/dashboard");
-            }
-          })
-          .catch((error) => {
-            message.value = (error as Error).message;
+          },
+        };
+
+        Http.request({ method: "POST", ...options }).then((response) => {
+          if (response.status !== 200) {
+            message.value = response.data.message;
             setOpen(true);
-          });
+            return;
+          }
+
+          if (response.data.token) {
+            store.commit("setToken", response.data.token);
+            router.push("/dashboard");
+          }
+        });
       }
     };
 
