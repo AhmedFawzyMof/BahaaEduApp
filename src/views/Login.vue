@@ -32,6 +32,9 @@
           <ion-button @click="login()" color="primary" expand="block"
             >تسجيل الدخول</ion-button
           >
+          <p>
+            {{ data }}
+          </p>
         </div>
       </div>
     </ion-content>
@@ -81,6 +84,7 @@ export default {
     return {
       username: "",
       password: "",
+      data: "",
       alertButtons: ["موافق"],
       isOpen: false,
       message: "",
@@ -124,11 +128,13 @@ export default {
             password: this.password,
           })
           .then((response) => {
+            this.data = response.data;
             this.$store.commit("setToken", response.data.token);
             this.$router.push("/dashboard");
           })
           .catch((error) => {
             this.message = error.response.data.message;
+            this.isOpen = false;
             this.isOpen = true;
           });
       }
