@@ -6,7 +6,7 @@ import { IonicVue } from "@ionic/vue";
 import axios from "axios";
 import { provide } from "vue";
 
-axios.defaults.baseURL = "http://localhost:3000/api";
+axios.defaults.baseURL = "https://bahaaedu-production.up.railway.app/api";
 
 import "@ionic/vue/css/core.css";
 import "@ionic/vue/css/normalize.css";
