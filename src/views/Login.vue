@@ -151,6 +151,8 @@ export default defineComponent({
           }
 
           if (response.data.token) {
+            message.value = "Login Successful";
+            setOpen(true);
             store.commit("setToken", response.data.token);
             router.push("/dashboard");
           }
