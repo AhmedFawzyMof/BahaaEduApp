@@ -50,7 +50,6 @@
 import { defineComponent, ref, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import axios from "../components/axios-config"; // Corrected import without .ts extension
 
 import {
   IonButtons,
@@ -117,7 +116,7 @@ export default defineComponent({
       isOpen.value = state;
     };
 
-    const login = () => {
+    const login = async () => {
       if (username.value === "") {
         error.value.username = true;
         error.value.message = "من فضلك ادخل اسم المستخدم";
@@ -135,21 +134,25 @@ export default defineComponent({
       }
 
       if (username.value !== "" && password.value !== "") {
-        axios
-          .post<LoginResponse>("/teacher/login", {
-            username: username.value,
-            password: password.value,
-          })
-          .then((response) => {
-            store.commit("setToken", response.data.token);
-            router.push("/dashboard");
-          })
-          .catch((error) => {
-            message.value =
-              error.response?.data?.message || "An error occurred";
-            setOpen(false);
-            setOpen(true);
+        try {
+          const request = await fetch("/teacher/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              username: username.value,
+              password: password.value,
+            }),
           });
+          const response = await request.json();
+          store.commit("setToken", response.token);
+          router.push("/dashboard");
+        } catch (error) {
+          message.value = (error as Error).message || "An error occurred";
+          setOpen(false);
+          setOpen(true);
+        }
       }
     };
 
