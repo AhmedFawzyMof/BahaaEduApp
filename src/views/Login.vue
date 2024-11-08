@@ -113,10 +113,11 @@ export default defineComponent({
     });
 
     const setOpen = (state: boolean) => {
+      console.log(state);
       isOpen.value = state;
     };
 
-    const login = async () => {
+    const login = () => {
       if (username.value === "") {
         error.value.username = true;
         error.value.message = "من فضلك ادخل اسم المستخدم";
@@ -134,25 +135,38 @@ export default defineComponent({
       }
 
       if (username.value !== "" && password.value !== "") {
-        try {
-          const request = await fetch("/teacher/login", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              username: username.value,
-              password: password.value,
-            }),
+        const baseUrl = "https://bahaaedu-production.up.railway.app/api";
+
+        fetch(baseUrl + "/teacher/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: username.value,
+            password: password.value,
+          }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              return response.json().then((errorData) => {
+                message.value = errorData.message || "خطأ في المحاولة للدخول";
+                setOpen(true);
+                throw new Error(errorData.message);
+              });
+            }
+            return response.json();
+          })
+          .then((data) => {
+            if (data.token) {
+              store.commit("setToken", data.token);
+              router.push("/dashboard");
+            }
+          })
+          .catch((error) => {
+            message.value = (error as Error).message;
+            setOpen(true);
           });
-          const response = await request.json();
-          store.commit("setToken", response.token);
-          router.push("/dashboard");
-        } catch (error) {
-          message.value = (error as Error).message || "An error occurred";
-          setOpen(false);
-          setOpen(true);
-        }
       }
     };
 
