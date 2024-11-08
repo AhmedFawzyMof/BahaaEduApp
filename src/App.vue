@@ -35,8 +35,11 @@
     </ion-split-pane>
   </ion-app>
 </template>
+<script lang="ts">
+import { defineComponent, ref, onMounted } from "vue";
+import { useStore } from "vuex";
+import { useRouter } from "vue-router";
 
-<script>
 import {
   IonApp,
   IonContent,
@@ -58,7 +61,13 @@ import {
   bookmarksOutline,
 } from "ionicons/icons";
 
-export default {
+interface Page {
+  title: string;
+  url: string;
+  icon: string;
+}
+
+export default defineComponent({
   name: "App",
   components: {
     IonApp,
@@ -73,23 +82,30 @@ export default {
     IonRouterOutlet,
     IonSplitPane,
   },
-  data() {
+
+  setup() {
+    const store = useStore();
+    const router = useRouter();
+
+    const listOfPages = ref<Page[]>([
+      { title: "لوحة التحكم", url: "/dashboard", icon: optionsOutline },
+      { title: "الطلاب", url: "/students", icon: peopleOutline },
+      { title: "الواجبات", url: "/homeworks", icon: bookOutline },
+      { title: "الاختبارات", url: "/tests", icon: bookOutline },
+      { title: "مراحل الدراسية", url: "/grades", icon: bookmarksOutline },
+    ]);
+
+    onMounted(() => {
+      console.log(store.state.isAuthenticated);
+      store.commit("initializeStore");
+      store.commit("isLoggedIn", router);
+    });
+
     return {
-      listOfPages: [
-        { title: "لوحة التحكم", url: "/dashboard", icon: optionsOutline },
-        { title: "الطلاب", url: "/students", icon: peopleOutline },
-        { title: "الواجبات", url: "/homeworks", icon: bookOutline },
-        { title: "الاختبارات", url: "/tests", icon: bookOutline },
-        { title: "مراحل الدراسية", url: "/grades", icon: bookmarksOutline },
-      ],
+      listOfPages,
     };
   },
-  mounted() {
-    console.log(this.$store.state.isAuthenticated);
-    this.$store.commit("initializeStore");
-    this.$store.commit("isLoggedIn", this.$router);
-  },
-};
+});
 </script>
 
 <style scoped>

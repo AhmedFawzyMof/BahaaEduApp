@@ -32,9 +32,6 @@
           <ion-button @click="login()" color="primary" expand="block"
             >تسجيل الدخول</ion-button
           >
-          <p>
-            {{ data }}
-          </p>
         </div>
       </div>
     </ion-content>
@@ -49,8 +46,12 @@
   </ion-page>
 </template>
 
-<script>
-import axios from "axios";
+<script lang="ts">
+import { defineComponent, ref, onMounted } from "vue";
+import { useStore } from "vuex";
+import { useRouter } from "vue-router";
+import axios from "../components/axios-config.ts";
+
 import {
   IonButtons,
   IonContent,
@@ -65,7 +66,7 @@ import {
   IonAlert,
 } from "@ionic/vue";
 
-export default {
+export default defineComponent({
   name: "Login",
   components: {
     IonButtons,
@@ -80,67 +81,79 @@ export default {
     IonInputPasswordToggle,
     IonAlert,
   },
-  data: () => {
-    return {
-      username: "",
-      password: "",
-      data: "",
-      alertButtons: ["موافق"],
-      isOpen: false,
+  setup() {
+    const store = useStore();
+    const router = useRouter();
+
+    const username = ref<string>("");
+    const password = ref<string>("");
+    const alertButtons = ref<string[]>(["موافق"]);
+    const isOpen = ref<boolean>(false);
+    const message = ref<string>("");
+    const error = ref({
       message: "",
-      error: {
-        message: "",
-        username: false,
-        password: false,
-      },
-    };
-  },
-  mounted() {
-    this.$store.commit("initializeStore");
-    if (this.$store.state.isAuthenticated) {
-      this.$router.push("/dashboard");
-    }
-  },
-  methods: {
-    setOpen(isOpen) {
-      this.isOpen = isOpen;
-    },
-    login() {
-      if (this.username == "") {
-        this.error.username = true;
-        this.error.message = "من فضلك ادخل اسم المستخدم";
-      } else {
-        this.error.username = false;
-        this.error.message = "";
+      username: false,
+      password: false,
+    });
+
+    onMounted(() => {
+      store.commit("initializeStore");
+      if (store.state.isAuthenticated) {
+        router.push("/dashboard");
       }
-      if (this.password == "") {
-        this.error.password = true;
-        this.error.message = "من فضلك ادخل كلمة المرور";
+    });
+
+    const setOpen = (state: boolean) => {
+      isOpen.value = state;
+    };
+
+    const login = () => {
+      if (username.value === "") {
+        error.value.username = true;
+        error.value.message = "من فضلك ادخل اسم المستخدم";
       } else {
-        this.error.message = "";
-        this.error.password = false;
+        error.value.username = false;
+        error.value.message = "";
       }
 
-      if (this.username !== "" && this.password !== "") {
+      if (password.value === "") {
+        error.value.password = true;
+        error.value.message = "من فضلك ادخل كلمة المرور";
+      } else {
+        error.value.message = "";
+        error.value.password = false;
+      }
+
+      if (username.value !== "" && password.value !== "") {
         axios
           .post("/teacher/login", {
-            username: this.username,
-            password: this.password,
+            username: username.value,
+            password: password.value,
           })
           .then((response) => {
-            this.data = response.data;
-            this.$store.commit("setToken", response.data.token);
-            this.$router.push("/dashboard");
+            store.commit("setToken", response.data.token);
+            router.push("/dashboard");
           })
           .catch((error) => {
-            this.message = error.response.data.message;
-            this.isOpen = false;
-            this.isOpen = true;
+            message.value = error.response.data.message;
+            setOpen(false);
+            setOpen(true);
           });
       }
-    },
+    };
+
+    return {
+      username,
+      password,
+      alertButtons,
+      isOpen,
+      message,
+      error,
+      setOpen,
+      login,
+    };
   },
-};
+});
 </script>
 
 <style scoped>
