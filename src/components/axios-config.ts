@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:3000/api",
+  baseURL: "https://bahaaedu-production.up.railway.app/api",
 });
 
 export default axiosInstance;
