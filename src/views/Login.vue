@@ -39,7 +39,7 @@
       :is-open="isOpen"
       header="خطأ"
       sub-header="لقد حدث خطأ ما"
-      message="حدث خطأ ما، يرجى محاولة ملء هذه المدخلات بشكل صحيح ثم المحاولة مرة أخرى"
+      :message="message"
       :buttons="alertButtons"
       @didDismiss="setOpen(false)"
     ></ion-alert>
@@ -83,6 +83,7 @@ export default {
       password: "",
       alertButtons: ["موافق"],
       isOpen: false,
+      message: "",
       error: {
         message: "",
         username: false,
@@ -127,8 +128,8 @@ export default {
             this.$router.push("/dashboard");
           })
           .catch((error) => {
+            this.message = error.response.data.message;
             this.isOpen = true;
-            console.log(error);
           });
       }
     },
