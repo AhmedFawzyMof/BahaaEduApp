@@ -61,9 +61,14 @@
     </ion-content>
   </ion-page>
 </template>
-<script>
-import axios from "axios";
+<script lang="ts">
+import { defineComponent, onMounted, ref } from "vue";
 import Header from "@/components/Header.vue";
+import { useStore } from "vuex";
+import { useRouter } from "vue-router";
+import { Http } from "@capacitor-community/http";
+import { BaseUrl } from "../utils/BaseUrl";
+
 import {
   IonPage,
   IonTitle,
@@ -78,7 +83,8 @@ import {
   IonList,
   IonItem,
 } from "@ionic/vue";
-export default {
+
+export default defineComponent({
   name: "Dashboard",
   components: {
     Header,
@@ -95,46 +101,58 @@ export default {
     IonList,
     IonItem,
   },
-  data() {
+  setup() {
+    const store = useStore();
+    const router = useRouter();
+    const above_average = ref<number>(0);
+    const num_users = ref<number>(0);
+    const average_result = ref<number>(0);
+    const pass_rate = ref<number>(0);
+    const outStanding = ref<Array<any>>([]); // Replace 'any' with specific student type if available
+
+    onMounted(() => {
+      store.commit("initializeStore");
+      const token = localStorage.getItem("token") || "";
+      getDashboard(token);
+    });
+
+    function getDashboard(token: string): void {
+      const options = {
+        url: BaseUrl + "/teacher/dashboard",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      Http.request({ method: "GET", ...options }).then((response) => {
+        if (response.status === 401) {
+          store.commit("logout");
+          router.push({ name: "Login" });
+          return;
+        }
+
+        const data = response.data.dashboard;
+        num_users.value = data.num_users;
+        above_average.value = data.above_average;
+        average_result.value = data.average_result;
+        outStanding.value = data.outstandingStudents;
+        pass_rate.value =
+          (data.PassRate.number_of_pass / data.PassRate.total_students) * 100;
+      });
+    }
+
     return {
-      above_average: 0,
-      num_users: 0,
-      average_result: 0,
-      pass_rate: 0,
-      outStanding: [],
+      store,
+      router,
+      above_average,
+      num_users,
+      average_result,
+      pass_rate,
+      outStanding,
     };
   },
-  mounted() {
-    this.$store.commit("isLoggedIn", this.$router);
-    const token = localStorage.getItem("token") || "";
-    this.getDashboard(token);
-  },
-  methods: {
-    getDashboard(token) {
-      axios
-        .get("/teacher/dashboard", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-        .then((response) => {
-          const data = response.data.dashboard;
-          this.num_users = data.num_users;
-          this.above_average = data.above_average;
-          this.average_result = data.average_result;
-          this.outStanding = data.outstandingStudents;
-          this.pass_rate =
-            (data.PassRate.number_of_pass / data.PassRate.total_students) * 100;
-        })
-        .catch((error) => {
-          if (error.status == 401) {
-            this.$store.commit("logout");
-            this.$router.push({ name: "Login" });
-          }
-        });
-    },
-  },
-};
+});
 </script>
 <style scoped>
 .stat {
@@ -154,7 +172,7 @@ export default {
 
 .stat-title {
   height: 10px;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
   color: white;
 }

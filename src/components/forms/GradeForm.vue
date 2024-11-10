@@ -28,8 +28,13 @@
     @didDismiss="setOpen(false)"
   ></ion-alert>
 </template>
-<script>
-import axios from "axios";
+<script lang="ts">
+import { defineComponent, ref, watch } from "vue";
+import { useStore } from "vuex";
+import { useRouter } from "vue-router";
+import { Http } from "@capacitor-community/http";
+import { BaseUrl } from "../../utils/BaseUrl";
+
 import {
   IonCard,
   IonCardHeader,
@@ -47,7 +52,7 @@ import {
   IonAlert,
 } from "@ionic/vue";
 
-export default {
+export default defineComponent({
   name: "GradesForm",
   props: {
     isOpen: Boolean,
@@ -70,76 +75,91 @@ export default {
     IonCheckbox,
     IonAlert,
   },
-  data() {
-    return {
-      grade: {
-        grade_name: "",
-      },
-      alertButtons: ["موافق"],
-      OpenAlert: false,
-      sub_header: "",
-      header: "",
-      message: "",
-    };
-  },
-  watch: {
-    Grade: {
-      immediate: true,
-      handler(newVal) {
-        console.log(newVal);
-        if (this.isEdit && newVal) {
-          this.grade.id = newVal.id;
-          this.grade.grade_name = newVal.grade_name;
-        }
-      },
-    },
-  },
-  methods: {
-    setOpen(isOpen) {
-      this.OpenAlert = isOpen;
-    },
-    submitForm() {
-      let url = "/grades/create";
+  emits: ["formSubmitted"],
+  setup(props, { emit }) {
+    const store = useStore();
+    const router = useRouter();
+    const OpenAlert = ref<boolean>(false);
+    const alertButtons = ref<string[]>(["موافق"]);
+    const grade = ref<{ grade_name: string; id: number }>({
+      id: 0,
+      grade_name: "",
+    });
+    const header = ref<string>("");
+    const sub_header = ref<string>("");
+    const message = ref<string>("");
 
-      if (this.isEdit) {
-        url = "/grades/updates";
+    function setOpen(isOpen: boolean) {
+      OpenAlert.value = isOpen;
+    }
+
+    function submitForm() {
+      let url = `${BaseUrl}/grades/create`;
+
+      if (props.isEdit) {
+        url = `${BaseUrl}/grades/updates`;
       }
 
-      const body = this.grade;
+      const options = {
+        url: url,
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        data: {
+          grade_name: grade.value.grade_name,
+          id: grade.value.id,
+        },
+      };
 
-      axios
-        .post(url, body, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        })
-        .then(async (response) => {
-          if (!this.isEdit) {
-            this.OpenAlert = true;
-            this.header = "تمت العملية بنجاح";
-            this.sub_header = "تم إنشاء مرحلة الدراسية بنجاح";
-            this.message = `تم إنشاء مرحلة الدراسية بنجاح بعنوان ${this.grade.grade_name}`;
-          }
-        })
-        .catch((error) => {
-          if (error.response && error.response.status === 401) {
-            this.OpenAlert = true;
-            this.header = "خطأ";
-            this.sub_header = "لقد حدث خطأ ما";
-            this.message = "حدث خطأ ما، يرجى المحاولة مرة أخرى";
-            this.$store.commit("logout");
-            this.$router.push({ name: "Login" });
-          } else {
-            this.OpenAlert = true;
-            this.header = "خطأ";
-            this.sub_header = "خطأ غير متوقع";
-            this.message = "حدث خطأ غير متوقع، يرجى المحاولة لاحقًا.";
-          }
-        });
-      this.$emit("formSubmitted", {});
-    },
+      Http.request({ method: "POST", ...options }).then((response) => {
+        if (response.status === 401) {
+          store.commit("logout");
+          router.push({ name: "Login" });
+          return;
+        }
+
+        if (response.status === 500) {
+          OpenAlert.value = true;
+          header.value = "خطأ";
+          sub_header.value = "خطأ غير متوقع";
+          message.value = "حدث خطأ غير متوقع، يرجى المحاولة لاحقًا.";
+        }
+
+        if (!props.isEdit) {
+          OpenAlert.value = true;
+          header.value = "تمت العملية بنجاح";
+          sub_header.value = "تم إنشاء مرحلة الدراسية بنجاح";
+          message.value = `تم إنشاء مرحلة الدراسية بنجاح بعنوان ${grade.value.grade_name}`;
+        }
+      });
+      emit("formSubmitted", {});
+    }
+
+    watch(
+      () => props.Grade,
+      (newVal) => {
+        if (props.isEdit && newVal) {
+          grade.value.id = newVal.id;
+          grade.value.grade_name = newVal.grade_name;
+        }
+      },
+      { immediate: true }
+    );
+
+    return {
+      store,
+      router,
+      OpenAlert,
+      grade,
+      header,
+      sub_header,
+      message,
+      alertButtons,
+      submitForm,
+      setOpen,
+    };
   },
-};
+});
 </script>
 <style>
 .input {

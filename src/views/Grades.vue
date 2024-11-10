@@ -2,8 +2,12 @@
   <ion-page>
     <Header />
     <ion-content :fullscreen="true" color="light">
-      <ion-button color="primary" expand="block" @click="OpenAdd(!openAdd)">
-        <ion-icon slot="icon-only" :icon="addCircleOutline"></ion-icon>
+      <ion-button
+        color="primary"
+        expand="block"
+        @click="openAddModal(!openAdd)"
+      >
+        <ion-icon slot="icon-only" :icon="addCircleOutlineIcon"></ion-icon>
         <p style="margin-left: 10px">اضافة مرحلة</p>
       </ion-button>
       <GradesForm
@@ -64,16 +68,19 @@
                       "
                     >
                       <div class="buttons">
-                        <ion-button @click="Edit(grade, !edit)">
+                        <ion-button @click="editGrade(grade, !edit)">
                           <ion-icon
                             slot="icon-only"
-                            :icon="createOutline"
+                            :icon="createOutlineIcon"
                           ></ion-icon>
                         </ion-button>
-                        <ion-button @click="Delete(grade.id)" color="danger">
+                        <ion-button
+                          @click="deleteGrade(grade.id)"
+                          color="danger"
+                        >
                           <ion-icon
                             slot="icon-only"
-                            :icon="trashOutline"
+                            :icon="trashOutlineIcon"
                           ></ion-icon>
                         </ion-button>
                       </div>
@@ -92,10 +99,15 @@
     </ion-content>
   </ion-page>
 </template>
-<script>
-import axios from "axios";
+<script lang="ts">
+import { defineComponent, onMounted, ref } from "vue";
 import Header from "@/components/Header.vue";
 import GradesForm from "@/components/forms/GradeForm.vue";
+import { Http } from "@capacitor-community/http";
+import { useStore } from "vuex";
+import { useRouter } from "vue-router";
+import { BaseUrl } from "../utils/BaseUrl";
+
 import {
   IonPage,
   IonContent,
@@ -112,13 +124,15 @@ import {
   IonButton,
   IonIcon,
 } from "@ionic/vue";
+
 import {
   createOutline,
   trashOutline,
   addCircleOutline,
   eyeOutline,
 } from "ionicons/icons";
-export default {
+
+export default defineComponent({
   name: "Grades",
   components: {
     Header,
@@ -138,78 +152,88 @@ export default {
     IonButton,
     IonIcon,
   },
-  data() {
+  setup() {
+    const store = useStore();
+    const router = useRouter();
+    const academicStages = ref<Array<any>>([]); // Adjust type if needed
+    const grades = ref<Array<any>>([]);
+    const openAdd = ref<boolean>(false);
+    const edit = ref<boolean>(false);
+    const grade = ref<any>({});
+    const createOutlineIcon = createOutline;
+    const trashOutlineIcon = trashOutline;
+    const addCircleOutlineIcon = addCircleOutline;
+    const eyeOutlineIcon = eyeOutline;
+
+    const getGrades = () => {
+      const token = localStorage.getItem("token") || "";
+      const options = {
+        url: BaseUrl + "/grades/all",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      Http.request({ method: "GET", ...options }).then((response) => {
+        if (response.status === 401) {
+          store.commit("logout");
+          router.push({ name: "Login" });
+        }
+        grades.value = response.data;
+      });
+    };
+
+    const openAddModal = (open: boolean) => {
+      openAdd.value = open;
+      grade.value = {};
+    };
+
+    const editGrade = (gradeData: any, isEdit: boolean) => {
+      edit.value = isEdit;
+      grade.value = isEdit ? gradeData : {};
+      openAdd.value = isEdit;
+    };
+
+    const deleteGrade = (id: string) => {
+      const token = localStorage.getItem("token") || "";
+      const options = {
+        url: `${BaseUrl}/grades/${id}`,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      Http.request({ method: "DELETE", ...options }).then((response) => {
+        if (response.status === 401) {
+          store.commit("logout");
+          router.push({ name: "Login" });
+        }
+        getGrades();
+      });
+    };
+
+    onMounted(() => {
+      store.commit("isLoggedIn", router);
+      getGrades();
+    });
+
     return {
-      academicStages: [],
-      grades: [],
-      openAdd: false,
-      edit: false,
-      grade: {},
-      createOutline,
-      trashOutline,
-      addCircleOutline,
-      eyeOutline,
+      academicStages,
+      grades,
+      openAdd,
+      edit,
+      grade,
+      createOutlineIcon,
+      trashOutlineIcon,
+      addCircleOutlineIcon,
+      eyeOutlineIcon,
+      getGrades,
+      openAddModal,
+      editGrade,
+      deleteGrade,
     };
   },
-  mounted() {
-    this.$store.commit("isLoggedIn", this.$router);
-    this.getGrades();
-  },
-  methods: {
-    getGrades() {
-      axios
-        .get(`/grades/all`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        })
-        .then((response) => {
-          this.grades = response.data;
-        })
-        .catch((error) => {
-          if (error.status == 401) {
-            this.$store.commit("logout");
-            this.$router.push({ name: "Login" });
-          }
-        });
-    },
-    OpenAdd(openAdd) {
-      this.openAdd = openAdd;
-      this.grade = {};
-    },
-    Edit(grade, edit) {
-      this.edit = edit;
-      if (edit) {
-        this.grade = grade;
-      }
-      this.openAdd = edit;
-    },
-    Delete(id) {
-      axios
-        .delete(`/grades/${id}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        })
-        .then((response) => {
-          this.getGrades();
-        })
-        .catch((error) => {
-          if (error.status == 401) {
-            this.$store.commit("logout");
-            this.$router.push({ name: "Login" });
-          }
-        });
-    },
-  },
-  watch: {
-    limit(newVal, oldVal) {
-      this.limit = newVal;
-      this.getGrades();
-    },
-  },
-};
+});
 </script>
+
 <style>
 .grid-container {
   width: 100%;

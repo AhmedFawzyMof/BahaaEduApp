@@ -133,7 +133,7 @@ export default defineComponent({
 
       if (username.value !== "" && password.value !== "") {
         const options = {
-          url: "https://bahaaedu-production.up.railway.app/api/teacher/login",
+          url: "http://localhost:3000/api/teacher/login",
           headers: {
             "Content-Type": "application/json",
           },
@@ -151,8 +151,6 @@ export default defineComponent({
           }
 
           if (response.data.token) {
-            message.value = "Login Successful";
-            setOpen(true);
             store.commit("setToken", response.data.token);
             router.push("/dashboard");
           }

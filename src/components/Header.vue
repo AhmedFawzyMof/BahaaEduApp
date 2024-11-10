@@ -8,7 +8,9 @@
     </ion-toolbar>
   </ion-header>
 </template>
-<script>
+<script lang="ts">
+import { defineComponent } from "vue";
+
 import {
   IonHeader,
   IonToolbar,
@@ -17,7 +19,7 @@ import {
   IonImg,
 } from "@ionic/vue";
 
-export default {
+export default defineComponent({
   name: "Header",
   components: {
     IonHeader,
@@ -26,8 +28,8 @@ export default {
     IonMenuButton,
     IonImg,
   },
-  data() {
+  setup() {
     return {};
   },
-};
+});
 </script>

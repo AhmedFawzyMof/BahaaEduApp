@@ -21,8 +21,12 @@
           </ion-select>
         </ion-card-content>
       </ion-card>
-      <ion-button color="primary" expand="block" @click="OpenAdd(!openAdd)">
-        <ion-icon slot="icon-only" :icon="addCircleOutline"></ion-icon>
+      <ion-button
+        color="primary"
+        expand="block"
+        @click="openAddModal(!openAdd)"
+      >
+        <ion-icon slot="icon-only" :icon="addCircleOutlineIcon"></ion-icon>
         <p style="margin-left: 10px">اضافة طالب</p>
       </ion-button>
       <StudentsForm
@@ -133,22 +137,25 @@
                       style="white-space: nowrap; min-width: 100px"
                     >
                       <div class="buttons">
-                        <ion-button @click="Edit(student, !edit)">
+                        <ion-button @click="editStudent(student, !edit)">
                           <ion-icon
                             slot="icon-only"
-                            :icon="createOutline"
+                            :icon="createOutlineIcon"
                           ></ion-icon>
                         </ion-button>
-                        <ion-button @click="Delete(student.id)" color="danger">
+                        <ion-button
+                          @click="deleteStudent(student.id)"
+                          color="danger"
+                        >
                           <ion-icon
                             slot="icon-only"
-                            :icon="trashOutline"
+                            :icon="trashOutlineIcon"
                           ></ion-icon>
                         </ion-button>
-                        <ion-button @click="View(student.id)" color="primary">
+                        <ion-button color="primary">
                           <ion-icon
                             slot="icon-only"
-                            :icon="eyeOutline"
+                            :icon="eyeOutlineIcon"
                           ></ion-icon>
                         </ion-button>
                       </div>
@@ -174,10 +181,13 @@
     </ion-content>
   </ion-page>
 </template>
-<script>
-import axios from "axios";
+<script lang="ts">
+import { defineComponent, onMounted, ref, watch } from "vue";
+import { Http } from "@capacitor-community/http";
 import Header from "@/components/Header.vue";
 import StudentsForm from "@/components/forms/StudentsForm.vue";
+import { useStore } from "vuex";
+import { useRouter } from "vue-router";
 import {
   IonPage,
   IonContent,
@@ -194,13 +204,15 @@ import {
   IonButton,
   IonIcon,
 } from "@ionic/vue";
+
 import {
   createOutline,
   trashOutline,
   addCircleOutline,
   eyeOutline,
 } from "ionicons/icons";
-export default {
+
+export default defineComponent({
   name: "Students",
   components: {
     Header,
@@ -220,84 +232,99 @@ export default {
     IonButton,
     IonIcon,
   },
-  data() {
+  setup() {
+    const store = useStore();
+    const router = useRouter();
+
+    const academicStages = ref<Array<any>>([]);
+    const students = ref<Array<any>>([]);
+    const stage = ref<number>(0);
+    const limit = ref<number>(30);
+    const openAdd = ref<boolean>(false);
+    const edit = ref<boolean>(false);
+    const student = ref<any>({});
+
+    const createOutlineIcon = createOutline;
+    const trashOutlineIcon = trashOutline;
+    const addCircleOutlineIcon = addCircleOutline;
+    const eyeOutlineIcon = eyeOutline;
+
+    const getStudents = async () => {
+      const token = localStorage.getItem("token") || "";
+      const options = {
+        url: `/student/all/${stage.value}/${limit.value}`,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      Http.request({ method: "GET", ...options }).then((response) => {
+        if (response.status === 401) {
+          store.commit("logout");
+          router.push({ name: "Login" });
+        }
+
+        academicStages.value = response.data.grades;
+        students.value = response.data.students;
+      });
+    };
+
+    const openAddModal = (isOpen: boolean) => {
+      openAdd.value = isOpen;
+      student.value = {};
+    };
+
+    const editStudent = (studentData: any, isEdit: boolean) => {
+      edit.value = isEdit;
+      student.value = isEdit ? studentData : {};
+      openAdd.value = isEdit;
+    };
+
+    const deleteStudent = async (id: string) => {
+      const token = localStorage.getItem("token") || "";
+      const options = {
+        url: `/student/${id}`,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      Http.request({ method: "DELETE", ...options }).then((response) => {
+        if (response.status === 401) {
+          store.commit("logout");
+          router.push({ name: "Login" });
+        }
+
+        getStudents();
+      });
+    };
+
+    onMounted(() => {
+      store.commit("isLoggedIn", router);
+      getStudents();
+    });
+
+    watch(stage, getStudents);
+    watch(limit, getStudents);
+
     return {
-      academicStages: [],
-      students: [],
-      stage: 0,
-      limit: 30,
-      openAdd: false,
-      edit: false,
-      student: {},
-      createOutline,
-      trashOutline,
-      addCircleOutline,
-      eyeOutline,
+      academicStages,
+      students,
+      stage,
+      limit,
+      openAdd,
+      edit,
+      student,
+      createOutlineIcon,
+      trashOutlineIcon,
+      addCircleOutlineIcon,
+      eyeOutlineIcon,
+      getStudents,
+      openAddModal,
+      editStudent,
+      deleteStudent,
     };
   },
-  mounted() {
-    this.$store.commit("isLoggedIn", this.$router);
-    this.getStudents();
-  },
-  methods: {
-    getStudents() {
-      axios
-        .get(`/student/all/${this.stage}/${this.limit}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        })
-        .then((response) => {
-          this.academicStages = response.data.grades;
-          this.students = response.data.students;
-        })
-        .catch((error) => {
-          if (error.status == 401) {
-            this.$store.commit("logout");
-            this.$router.push({ name: "Login" });
-          }
-        });
-    },
-    OpenAdd(openAdd) {
-      this.openAdd = openAdd;
-      this.student = {};
-    },
-    Edit(student, edit) {
-      this.edit = edit;
-      if (edit) {
-        this.student = student;
-      }
-      this.openAdd = edit;
-    },
-    Delete(id) {
-      axios
-        .delete(`/student/${id}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        })
-        .then((response) => {
-          this.getStudents();
-        })
-        .catch((error) => {
-          if (error.status == 401) {
-            this.$store.commit("logout");
-            this.$router.push({ name: "Login" });
-          }
-        });
-    },
-  },
-  watch: {
-    stage(newVal, oldVal) {
-      this.stage = newVal;
-      this.getStudents();
-    },
-    limit(newVal, oldVal) {
-      this.limit = newVal;
-      this.getStudents();
-    },
-  },
-};
+});
 </script>
 <style>
 .grid-container {

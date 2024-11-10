@@ -80,8 +80,14 @@
     @didDismiss="setOpen(false)"
   ></ion-alert>
 </template>
-<script>
-import axios from "axios";
+<script lang="ts">
+import { defineComponent, ref, watch } from "vue";
+import { useStore } from "vuex";
+import { useRouter } from "vue-router";
+import { Http } from "@capacitor-community/http";
+import { BaseUrl } from "../../utils/BaseUrl";
+import { GradeType, TermType, testType } from "../../utils/Types";
+
 import {
   IonCard,
   IonCardHeader,
@@ -99,14 +105,20 @@ import {
   IonAlert,
 } from "@ionic/vue";
 
-export default {
+export default defineComponent({
   name: "TestForm",
   props: {
     isOpen: Boolean,
     isEdit: Boolean,
     Test: Object,
-    Grades: Array,
-    Terms: Array,
+    Grades: {
+      type: Array as () => GradeType[],
+      required: true,
+    },
+    Terms: {
+      type: Array as () => TermType[],
+      required: true,
+    },
   },
   components: {
     IonCard,
@@ -124,113 +136,131 @@ export default {
     IonCheckbox,
     IonAlert,
   },
-  data() {
-    return {
-      test: {
-        test_name: "",
-        grade: 0,
-        created_at: "",
-        term_id: "",
-        cover: null,
-      },
-      alertButtons: ["موافق"],
-      OpenAlert: false,
-      sub_header: "",
-      header: "",
-      message: "",
-    };
-  },
-  watch: {
-    Test: {
-      immediate: true,
-      handler(newVal) {
-        console.log(newVal);
-        if (this.isEdit && newVal) {
-          this.test.id = newVal.id;
-          this.test.test_name = newVal.test_name;
-          this.test.grade = newVal.grade_id;
-          this.test.created_at = newVal.created_at;
-          this.test.term_id = newVal.term_id;
-        }
-      },
-    },
-  },
-  methods: {
-    handleFileChange(event) {
+  emits: ["formSubmitted"],
+  setup(props, { emit }) {
+    const store = useStore();
+    const router = useRouter();
+    const OpenAlert = ref<boolean>(false);
+    const header = ref<string>("");
+    const sub_header = ref<string>("");
+    const message = ref<string>("");
+    const alertButtons = ref<string[]>(["موافق"]);
+    const test = ref<testType>({
+      id: 0,
+      test_name: "",
+      grade: 0,
+      created_at: "",
+      expire_date: "",
+      term_id: 0,
+      cover: null,
+    });
+
+    function setOpen(isOpen: boolean) {
+      OpenAlert.value = isOpen;
+    }
+
+    function handleFileChange(event: any) {
       const file = event.target.files[0];
       console.log(event);
       if (file) {
-        this.test.cover = file; // Store the file object
+        test.value.cover = file;
       } else {
-        this.test.cover = null; // Reset if no file is selected
+        test.value.cover = null;
       }
-    },
-    setOpen(isOpen) {
-      this.OpenAlert = isOpen;
-    },
-    submitForm() {
-      let url = "/tests/create";
+    }
 
-      if (this.isEdit) {
-        url = "/tests/updates";
+    function submitForm() {
+      let url = BaseUrl + "/tests/create";
+
+      if (props.isEdit) {
+        url = BaseUrl + "/homeworks/updates";
       }
 
-      for (const key of Object.keys(this.test)) {
-        if (!this.isEdit) {
-          if (this.test[key] === "") {
-            this.OpenAlert = true;
-            this.header = "خطأ";
-            this.sub_header = "لقد حدث خطأ ما";
-            this.message = "يجب عليك تعبئة جميع الحقول";
-            return;
+      for (const key of Object.keys(test.value)) {
+        if (!props.isEdit) {
+          if (key === "cover") {
+            continue;
           }
+          OpenAlert.value = true;
+          header.value = "خطأ";
+          sub_header.value = "لقد حدث خطأ ما";
+          message.value = "يجب عليك تعبئة جميع الحقول";
+          return;
         }
       }
 
       const formData = new FormData();
-      formData.append("test_name", this.test.test_name);
-      formData.append("grade", this.test.grade);
-      formData.append("term_id", this.test.term_id);
-      formData.append("created_at", this.test.created_at);
-      if (!this.isEdit) {
-        formData.append("cover", this.test.cover);
+      formData.append("test_name", test.value.test_name);
+      formData.append("grade", String(test.value.grade));
+      formData.append("term_id", String(test.value.term_id));
+      formData.append("created_at", test.value.created_at);
+      if (!props.isEdit && test.value.cover) {
+        formData.append("cover", test.value.cover);
       } else {
-        formData.append("id", this.test.id);
+        formData.append("id", String(test.value.id));
       }
 
-      axios
-        .post(url, formData, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        })
-        .then(async (response) => {
-          if (!this.isEdit) {
-            this.OpenAlert = true;
-            this.header = "تمت العملية بنجاح";
-            this.sub_header = "تم إنشاء الاختبار بنجاح";
-            this.message = `تم إنشاء الاختبار بنجاح بعنوان ${this.test.test_name}`;
-          }
-        })
-        .catch((error) => {
-          if (error.response && error.response.status === 401) {
-            this.OpenAlert = true;
-            this.header = "خطأ";
-            this.sub_header = "لقد حدث خطأ ما";
-            this.message = "حدث خطأ ما، يرجى المحاولة مرة أخرى";
-            this.$store.commit("logout");
-            this.$router.push({ name: "Login" });
-          } else {
-            this.OpenAlert = true;
-            this.header = "خطأ";
-            this.sub_header = "خطأ غير متوقع";
-            this.message = "حدث خطأ غير متوقع، يرجى المحاولة لاحقًا.";
-          }
-        });
-      this.$emit("formSubmitted", {});
-    },
+      const options = {
+        url: url,
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        data: formData,
+      };
+
+      Http.request({ method: "POST", ...options }).then((response) => {
+        if (response.status === 401) {
+          store.commit("logout");
+          router.push({ name: "Login" });
+          return;
+        }
+
+        if (response.status === 500) {
+          OpenAlert.value = true;
+          header.value = "خطأ";
+          sub_header.value = "خطأ غير متوقع";
+          message.value = "حدث خطأ غير متوقع، يرجى المحاولة لاحقًا.";
+        }
+
+        if (!props.isEdit) {
+          OpenAlert.value = true;
+          header.value = "تمت العملية بنجاح";
+          sub_header.value = "تم إنشاء الاختبار بنجاح";
+          message.value = `تم إنشاء الاختبار بنجاح بعنوان ${test.value.test_name}`;
+        }
+      });
+      emit("formSubmitted", {});
+    }
+
+    watch(
+      () => props.Test,
+      (newVal) => {
+        if (props.isEdit && newVal) {
+          test.value.id = newVal.id;
+          test.value.test_name = newVal.test_name;
+          test.value.grade = newVal.grade_id;
+          test.value.created_at = newVal.created_at;
+          test.value.term_id = newVal.term_id;
+        }
+      },
+      { immediate: true }
+    );
+
+    return {
+      test,
+      store,
+      router,
+      OpenAlert,
+      header,
+      sub_header,
+      message,
+      alertButtons,
+      setOpen,
+      submitForm,
+      handleFileChange,
+    };
   },
-};
+});
 </script>
 <style>
 .input {

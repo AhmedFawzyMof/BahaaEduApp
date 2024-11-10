@@ -65,8 +65,15 @@
     @didDismiss="setOpen(false)"
   ></ion-alert>
 </template>
-<script>
-import axios from "axios";
+<script lang="ts">
+import { defineComponent, ref, watch } from "vue";
+import { useStore } from "vuex";
+import { useRouter } from "vue-router";
+import { Http } from "@capacitor-community/http";
+import { BaseUrl } from "../../utils/BaseUrl";
+
+import { studentType, GradeType } from "../../utils/Types";
+
 import {
   IonCard,
   IonCardHeader,
@@ -84,13 +91,16 @@ import {
   IonAlert,
 } from "@ionic/vue";
 
-export default {
+export default defineComponent({
   name: "StudentsForm",
   props: {
     isOpen: Boolean,
     isEdit: Boolean,
     Student: Object,
-    Grades: Array,
+    Grades: {
+      type: Array as () => GradeType[],
+      required: true,
+    },
   },
   components: {
     IonCard,
@@ -108,93 +118,115 @@ export default {
     IonCheckbox,
     IonAlert,
   },
-  data() {
-    return {
-      student: {
-        username: this.isEdit ? this.Student.username : "",
-        password: "",
-        grade: this.isEdit ? this.Student.grade_id : 0,
-        isBlocked: this.isEdit ? this.Student.isBlocked : false,
-        parent_phone: this.isEdit ? this.Student.parent_phone : "",
-        BlockReason: this.isEdit ? this.Student.BlockReason : "",
+  emits: ["formSubmitted"],
+  setup(props, { emit }) {
+    const student = ref<studentType>({
+      id: 0,
+      username: "",
+      password: "",
+      grade: 0,
+      isBlocked: false,
+      parent_phone: "",
+      BlockReason: "",
+    });
+    const alertButtons = ref<string[]>(["موافق"]);
+    const OpenAlert = ref<boolean>(false);
+    const sub_header = ref<string>("");
+    const header = ref<string>("");
+    const message = ref<string>("");
+    const store = useStore();
+    const router = useRouter();
+
+    function setOpen(isOpen: boolean) {
+      OpenAlert.value = isOpen;
+    }
+
+    function submitForm() {
+      let url = BaseUrl + "/student/create";
+
+      if (props.isEdit) {
+        url = BaseUrl + "/student/update";
+      }
+
+      for (const key of Object.keys(student.value)) {
+        if (!props.isEdit) {
+          if (
+            key !== "isBlocked" &&
+            key !== "BlockReason" &&
+            key !== "parent_phone"
+          ) {
+            continue;
+          }
+          if (student.value[key] === "") {
+            OpenAlert.value = true;
+            header.value = "خطأ";
+            sub_header.value = "لقد حدث خطأ ما";
+            message.value = "يجب عليك تعبئة جميع الحقول";
+            return;
+          }
+        }
+      }
+
+      const options = {
+        url: url,
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        data: student.value,
+      };
+
+      Http.post(options).then((response) => {
+        if (response.status === 401) {
+          store.commit("logout");
+          router.push({ name: "Login" });
+          return;
+        }
+
+        if (response.status === 500) {
+          OpenAlert.value = true;
+          header.value = "خطأ";
+          sub_header.value = "خطأ غير متوقع";
+          message.value = "حدث خطأ غير متوقع، يرجى المحاولة لاحقًا.";
+        }
+
+        if (!props.isEdit) {
+          OpenAlert.value = true;
+          header.value = "تمت العملية بنجاح";
+          sub_header.value = "تم إنشاء طالب بنجاح";
+          message.value = `تم إنشاء طالب بنجاح باسم ${student.value.username}`;
+        }
+      });
+
+      emit("formSubmitted");
+    }
+
+    watch(
+      () => props.Student,
+      (newVal) => {
+        if (props.isEdit && newVal) {
+          student.value.id = newVal.id;
+          student.value.username = newVal.username;
+          student.value.grade = newVal.grade_id;
+          student.value.isBlocked = newVal.isBlocked;
+          student.value.parent_phone = newVal.parent_phone;
+          student.value.BlockReason = newVal.BlockReason;
+        }
       },
-      alertButtons: ["موافق"],
-      OpenAlert: false,
-      sub_header: "",
-      header: "",
-      message: "",
+      { immediate: true }
+    );
+
+    return {
+      student,
+      store,
+      router,
+      OpenAlert,
+      header,
+      sub_header,
+      message,
+      alertButtons,
+      setOpen,
+      submitForm,
     };
   },
-  watch: {
-    Student: {
-      immediate: true,
-      handler(newVal) {
-        if (this.isEdit && newVal) {
-          this.student.id = newVal.id;
-          this.student.username = newVal.username;
-          this.student.grade = newVal.grade_id;
-          this.student.isBlocked = newVal.isBlocked;
-          this.student.parent_phone = newVal.parent_phone;
-          this.student.BlockReason = newVal.BlockReason;
-        }
-      },
-    },
-  },
-  methods: {
-    setOpen(isOpen) {
-      this.OpenAlert = isOpen;
-    },
-    submitForm() {
-      let url = "/student/create";
-
-      if (this.isEdit) {
-        url = "/student/update";
-      }
-
-      for (const key of Object.keys(this.student)) {
-        if (
-          key !== "isBlocked" &&
-          key !== "BlockReason" &&
-          key !== "parent_phone"
-        ) {
-          if (!this.isEdit) {
-            if (this.student[key] === "") {
-              this.OpenAlert = true;
-              this.header = "خطأ";
-              this.sub_header = "لقد حدث خطأ ما";
-              this.message = "يجب عليك تعبئة جميع الحقول";
-              return;
-            }
-          }
-        }
-      }
-
-      axios
-        .post(url, this.student, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        })
-        .then(async (response) => {
-          this.OpenAlert = true;
-          this.header = "تمت العملية بنجاح";
-          this.sub_header = "تم إنشاء الطالب بنجاح";
-          this.message = `تم إنشاء الطالب بنجاح باسم ${
-            this.student.username
-          } من ${Grades[this.student.grade].grade_name}`;
-        })
-        .catch((error) => {
-          if (error.status == 401) {
-            this.OpenAlert = true;
-            this.header = "خطأ";
-            this.sub_header = "لقد حدث خطأ ما";
-            this.message = "حدث خطأ ما، يرجى المحاولة مرة أخرى";
-            this.$store.commit("logout");
-            this.$router.push({ name: "Login" });
-          }
-        });
-      this.$emit("formSubmitted", {});
-    },
-  },
-};
+});
 </script>

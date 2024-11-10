@@ -21,8 +21,12 @@
           </ion-select>
         </ion-card-content>
       </ion-card>
-      <ion-button color="primary" expand="block" @click="OpenAdd(!openAdd)">
-        <ion-icon slot="icon-only" :icon="addCircleOutline"></ion-icon>
+      <ion-button
+        color="primary"
+        expand="block"
+        @click="openAddModal(!openAdd)"
+      >
+        <ion-icon slot="icon-only" :icon="addCircleOutlineIcon"></ion-icon>
         <p style="margin-left: 10px">اضافة اختبار</p>
       </ion-button>
       <TestForm
@@ -117,14 +121,14 @@
                       class="data-cell"
                       style="white-space: nowrap; min-width: 150px"
                     >
-                      <ion-button @click="EditTest(test, !edit)">
-                        <ion-icon :icon="createOutline" />
+                      <ion-button @click="editTest(test, !edit)">
+                        <ion-icon :icon="createOutlineIcon" />
                       </ion-button>
-                      <ion-button color="danger" @click="DeleteTest(test.id)">
-                        <ion-icon :icon="trashOutline" />
+                      <ion-button color="danger" @click="deleteTest(test.id)">
+                        <ion-icon :icon="trashOutlineIcon" />
                       </ion-button>
-                      <ion-button color="secondary" @click="ViewTest(test.id)">
-                        <ion-icon :icon="eyeOutline" />
+                      <ion-button color="secondary">
+                        <ion-icon :icon="eyeOutlineIcon" />
                       </ion-button>
                     </ion-col>
                   </ion-row>
@@ -148,10 +152,15 @@
     </ion-content>
   </ion-page>
 </template>
-<script>
-import axios from "axios";
+<script lang="ts">
+import { defineComponent, onMounted, ref, watch } from "vue";
+import { Http } from "@capacitor-community/http";
 import Header from "@/components/Header.vue";
 import TestForm from "@/components/forms/TestForm.vue";
+import { useStore } from "vuex";
+import { useRouter } from "vue-router";
+import { BaseUrl } from "../utils/BaseUrl";
+
 import {
   IonPage,
   IonContent,
@@ -168,13 +177,15 @@ import {
   IonButton,
   IonIcon,
 } from "@ionic/vue";
+
 import {
   createOutline,
   trashOutline,
   addCircleOutline,
   eyeOutline,
 } from "ionicons/icons";
-export default {
+
+export default defineComponent({
   name: "Tests",
   components: {
     Header,
@@ -194,99 +205,119 @@ export default {
     IonButton,
     IonIcon,
   },
-  data() {
+  setup() {
+    const store = useStore();
+    const router = useRouter();
+
+    const academicStages = ref<Array<any>>([]);
+    const tests = ref<Array<any>>([]);
+    const stage = ref<number>(0);
+    const limit = ref<number>(30);
+    const openAdd = ref<boolean>(false);
+    const edit = ref<boolean>(false);
+    const test = ref<any>({});
+
+    const createOutlineIcon = createOutline;
+    const trashOutlineIcon = trashOutline;
+    const addCircleOutlineIcon = addCircleOutline;
+    const eyeOutlineIcon = eyeOutline;
+
+    const terms = ref([
+      { id: 1, term_name: "الاول" },
+      { id: 2, term_name: "الثاني" },
+      { id: 3, term_name: "لا يوجد" },
+    ]);
+
+    const getTests = async () => {
+      const token = localStorage.getItem("token") || "";
+      const options = {
+        url: `${BaseUrl}/tests/getall/${stage.value}/${limit.value}`,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      Http.request({ method: "GET", ...options }).then((response) => {
+        if (response.status === 401) {
+          store.commit("logout");
+          router.push({ name: "Login" });
+          return;
+        }
+        academicStages.value = response.data.grades;
+        tests.value = response.data.tests;
+      });
+    };
+
+    const grade = (id: number) => {
+      const stage = academicStages.value.find((stage) => stage.id === id);
+      return stage ? stage.grade_name : "";
+    };
+
+    const term = (id: number) => {
+      const term = terms.value.find((term) => term.id === id);
+      return term ? term.term_name : "";
+    };
+
+    const openAddModal = (isOpen: boolean) => {
+      openAdd.value = isOpen;
+      test.value = {};
+    };
+
+    const editTest = (testData: any, isEdit: boolean) => {
+      edit.value = isEdit;
+      test.value = isEdit ? testData : {};
+      openAdd.value = isEdit;
+    };
+
+    const deleteTest = async (id: string) => {
+      const token = localStorage.getItem("token") || "";
+      const options = {
+        url: `${BaseUrl}/tests/${id}`,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      Http.request({ method: "DELETE", ...options }).then((response) => {
+        if (response.status === 401) {
+          store.commit("logout");
+          router.push({ name: "Login" });
+          return;
+        }
+        getTests();
+      });
+    };
+
+    onMounted(() => {
+      store.commit("isLoggedIn", router);
+      getTests();
+    });
+
+    watch(stage, getTests);
+    watch(limit, getTests);
+
     return {
-      academicStages: [],
-      tests: [],
-      stage: 0,
-      limit: 30,
-      openAdd: false,
-      edit: false,
-      test: {},
-      createOutline,
-      trashOutline,
-      addCircleOutline,
-      eyeOutline,
-      terms: [
-        { id: 1, term_name: "الاول" },
-        { id: 2, term_name: "الثاني" },
-        { id: 3, term_name: "لا يوجد" },
-      ],
+      academicStages,
+      tests,
+      stage,
+      limit,
+      openAdd,
+      edit,
+      test,
+      createOutlineIcon,
+      trashOutlineIcon,
+      addCircleOutlineIcon,
+      eyeOutlineIcon,
+      terms,
+      getTests,
+      grade,
+      term,
+      openAddModal,
+      editTest,
+      deleteTest,
     };
   },
-  mounted() {
-    this.$store.commit("isLoggedIn", this.$router);
-    this.getTests();
-  },
-  methods: {
-    grade(id) {
-      const stage = this.academicStages.find((stage) => stage.id == id);
-      return stage.grade_name;
-    },
-    term(id) {
-      const term = this.terms.find((term) => term.id == id);
-      return term.term_name;
-    },
-    getTests() {
-      axios
-        .get(`/tests/getall/${this.stage}/${this.limit}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        })
-        .then((response) => {
-          console.log(response);
-          this.academicStages = response.data.grades;
-          this.tests = response.data.tests;
-        })
-        .catch((error) => {
-          if (error.status == 401) {
-            this.$store.commit("logout");
-            this.$router.push({ name: "Login" });
-          }
-        });
-    },
-    OpenAdd(openAdd) {
-      this.openAdd = openAdd;
-      this.test = {};
-    },
-    EditTest(test, edit) {
-      this.edit = edit;
-      if (edit) {
-        this.test = test;
-      }
-      this.openAdd = edit;
-    },
-    DeleteTest(id) {
-      axios
-        .delete(`/tests/${id}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        })
-        .then((response) => {
-          this.getTests();
-        })
-        .catch((error) => {
-          if (error.status == 401) {
-            this.$store.commit("logout");
-            this.$router.push({ name: "Login" });
-          }
-        });
-    },
-  },
-  watch: {
-    stage(newVal, oldVal) {
-      this.stage = newVal;
-      this.getTests();
-    },
-    limit(newVal, oldVal) {
-      this.limit = newVal;
-      this.getTests();
-    },
-  },
-};
+});
 </script>
+
 <style>
 .grid-container {
   width: 100%;
