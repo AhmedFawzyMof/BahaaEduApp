@@ -183,11 +183,12 @@
 </template>
 <script lang="ts">
 import { defineComponent, onMounted, ref, watch } from "vue";
-import { Http } from "@capacitor-community/http";
 import Header from "@/components/Header.vue";
 import StudentsForm from "@/components/forms/StudentsForm.vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import { BaseUrl } from "../utils/BaseUrl";
+
 import {
   IonPage,
   IonContent,
@@ -249,24 +250,34 @@ export default defineComponent({
     const addCircleOutlineIcon = addCircleOutline;
     const eyeOutlineIcon = eyeOutline;
 
+    onMounted(() => {
+      store.commit("isLoggedIn", router);
+      getStudents();
+    });
+
     const getStudents = async () => {
       const token = localStorage.getItem("token") || "";
-      const options = {
-        url: `/student/all/${stage.value}/${limit.value}`,
+
+      fetch(`${BaseUrl}/student/all/${stage.value}/${limit.value}`, {
+        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      };
-
-      Http.request({ method: "GET", ...options }).then((response) => {
-        if (response.status === 401) {
-          store.commit("logout");
-          router.push({ name: "Login" });
-        }
-
-        academicStages.value = response.data.grades;
-        students.value = response.data.students;
-      });
+      })
+        .then((response) => {
+          if (response.status === 401) {
+            store.commit("logout");
+            router.push("/login");
+            return;
+          }
+          return response.json();
+        })
+        .then((data) => {
+          if (data) {
+            academicStages.value = data.grades;
+            students.value = data.students;
+          }
+        });
     };
 
     const openAddModal = (isOpen: boolean) => {
@@ -282,26 +293,22 @@ export default defineComponent({
 
     const deleteStudent = async (id: string) => {
       const token = localStorage.getItem("token") || "";
-      const options = {
-        url: `/student/${id}`,
+
+      fetch(`${BaseUrl}/student/${id}`, {
+        method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      };
-      Http.request({ method: "DELETE", ...options }).then((response) => {
-        if (response.status === 401) {
-          store.commit("logout");
-          router.push({ name: "Login" });
-        }
-
-        getStudents();
-      });
+      })
+        .then((response) => {
+          if (response.status === 401) {
+            store.commit("logout");
+            router.push("/login");
+            return;
+          }
+        })
+        .then((data) => getStudents());
     };
-
-    onMounted(() => {
-      store.commit("isLoggedIn", router);
-      getStudents();
-    });
 
     watch(stage, getStudents);
     watch(limit, getStudents);

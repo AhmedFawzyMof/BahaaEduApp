@@ -29,7 +29,7 @@
           <div dir="rtl" class="error-message" v-if="error.message != ''">
             <p>{{ error.message }}</p>
           </div>
-          <ion-button @click="login()" color="primary" expand="block"
+          <ion-button @click="Login()" color="primary" expand="block"
             >تسجيل الدخول</ion-button
           >
         </div>
@@ -50,7 +50,6 @@
 import { defineComponent, ref, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { Http } from "@capacitor-community/http";
 import { BaseUrl } from "@/utils/BaseUrl";
 
 import {
@@ -110,12 +109,11 @@ export default defineComponent({
       }
     });
 
-    const setOpen = (state: boolean) => {
-      console.log(state);
+    function setOpen(state: boolean) {
       isOpen.value = state;
-    };
+    }
 
-    const login = () => {
+    function Login() {
       if (username.value === "") {
         error.value.username = true;
         error.value.message = "من فضلك ادخل اسم المستخدم";
@@ -133,31 +131,41 @@ export default defineComponent({
       }
 
       if (username.value !== "" && password.value !== "") {
-        const options = {
-          url: BaseUrl + "/teacher/login",
+        fetch(BaseUrl + "/teacher/login", {
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          data: {
+          body: JSON.stringify({
             username: username.value,
             password: password.value,
-          },
-        };
+          }),
+        })
+          .then((response) => {
+            if (response.status === 401) {
+              store.commit("logout");
+              router.push({ name: "Login" });
+              return;
+            }
 
-        Http.request({ method: "POST", ...options }).then((response) => {
-          if (response.status !== 200) {
-            message.value = response.data.message;
-            setOpen(true);
-            return;
-          }
+            if (response.status === 500) {
+              return response.json().then((data) => {
+                message.value = data.message;
+                setOpen(true);
+              });
+            }
 
-          if (response.data.token) {
-            store.commit("setToken", response.data.token);
-            router.push("/dashboard");
-          }
-        });
+            return response.json();
+          })
+          .then((data) => {
+            if (data.token) {
+              store.commit("setToken", data.token);
+              router.push("/dashboard");
+              return;
+            }
+          });
       }
-    };
+    }
 
     return {
       username,
@@ -166,8 +174,8 @@ export default defineComponent({
       isOpen,
       message,
       error,
+      Login,
       setOpen,
-      login,
     };
   },
 });

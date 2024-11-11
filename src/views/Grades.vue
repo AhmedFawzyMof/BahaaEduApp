@@ -103,7 +103,6 @@
 import { defineComponent, onMounted, ref } from "vue";
 import Header from "@/components/Header.vue";
 import GradesForm from "@/components/forms/GradeForm.vue";
-import { Http } from "@capacitor-community/http";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { BaseUrl } from "../utils/BaseUrl";
@@ -165,21 +164,32 @@ export default defineComponent({
     const addCircleOutlineIcon = addCircleOutline;
     const eyeOutlineIcon = eyeOutline;
 
+    onMounted(() => {
+      store.commit("isLoggedIn", router);
+      getGrades();
+    });
+
     const getGrades = () => {
       const token = localStorage.getItem("token") || "";
-      const options = {
-        url: BaseUrl + "/grades/all",
+      fetch(`${BaseUrl}/grades/all`, {
+        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      };
-      Http.request({ method: "GET", ...options }).then((response) => {
-        if (response.status === 401) {
-          store.commit("logout");
-          router.push({ name: "Login" });
-        }
-        grades.value = response.data;
-      });
+      })
+        .then((response) => {
+          if (response.status === 401) {
+            store.commit("logout");
+            router.push("/login");
+            return;
+          }
+          return response.json();
+        })
+        .then((data) => {
+          if (data) {
+            grades.value = data;
+          }
+        });
     };
 
     const openAddModal = (open: boolean) => {
@@ -195,25 +205,22 @@ export default defineComponent({
 
     const deleteGrade = (id: string) => {
       const token = localStorage.getItem("token") || "";
-      const options = {
-        url: `${BaseUrl}/grades/${id}`,
+
+      fetch(`${BaseUrl}/grades/${id}`, {
+        method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      };
-      Http.request({ method: "DELETE", ...options }).then((response) => {
-        if (response.status === 401) {
-          store.commit("logout");
-          router.push({ name: "Login" });
-        }
-        getGrades();
-      });
+      })
+        .then((response) => {
+          if (response.status === 401) {
+            store.commit("logout");
+            router.push("/login");
+            return;
+          }
+        })
+        .then((data) => getGrades());
     };
-
-    onMounted(() => {
-      store.commit("isLoggedIn", router);
-      getGrades();
-    });
 
     return {
       academicStages,

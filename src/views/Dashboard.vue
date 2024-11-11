@@ -66,7 +66,6 @@ import { defineComponent, onMounted, ref } from "vue";
 import Header from "@/components/Header.vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { Http } from "@capacitor-community/http";
 import { BaseUrl } from "../utils/BaseUrl";
 
 import {
@@ -118,28 +117,38 @@ export default defineComponent({
 
     function getDashboard(token: string): void {
       const options = {
-        url: BaseUrl + "/teacher/dashboard",
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       };
 
-      Http.request({ method: "GET", ...options }).then((response) => {
-        if (response.status === 401) {
-          store.commit("logout");
-          router.push({ name: "Login" });
-          return;
-        }
-
-        const data = response.data.dashboard;
-        num_users.value = data.num_users;
-        above_average.value = data.above_average;
-        average_result.value = data.average_result;
-        outStanding.value = data.outstandingStudents;
-        pass_rate.value =
-          (data.PassRate.number_of_pass / data.PassRate.total_students) * 100;
-      });
+      fetch(`${BaseUrl}/teacher/dashboard`, options)
+        .then((response) => {
+          if (response.status === 401) {
+            store.commit("logout");
+            router.push("/login");
+            return;
+          }
+          return response.json();
+        })
+        .then((data) => {
+          if (data) {
+            const dashboard = data.dashboard;
+            num_users.value = dashboard.num_users;
+            above_average.value = dashboard.above_average;
+            average_result.value = dashboard.average_result;
+            outStanding.value = dashboard.outstandingStudents;
+            pass_rate.value =
+              (dashboard.PassRate.number_of_pass /
+                dashboard.PassRate.total_students) *
+              100;
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching dashboard data:", error);
+        });
     }
 
     return {

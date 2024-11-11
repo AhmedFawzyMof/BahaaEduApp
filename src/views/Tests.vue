@@ -154,7 +154,6 @@
 </template>
 <script lang="ts">
 import { defineComponent, onMounted, ref, watch } from "vue";
-import { Http } from "@capacitor-community/http";
 import Header from "@/components/Header.vue";
 import TestForm from "@/components/forms/TestForm.vue";
 import { useStore } from "vuex";
@@ -230,21 +229,26 @@ export default defineComponent({
 
     const getTests = async () => {
       const token = localStorage.getItem("token") || "";
-      const options = {
-        url: `${BaseUrl}/tests/getall/${stage.value}/${limit.value}`,
+      fetch(`${BaseUrl}/tests/getall/${stage.value}/${limit.value}`, {
+        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      };
-      Http.request({ method: "GET", ...options }).then((response) => {
-        if (response.status === 401) {
-          store.commit("logout");
-          router.push({ name: "Login" });
-          return;
-        }
-        academicStages.value = response.data.grades;
-        tests.value = response.data.tests;
-      });
+      })
+        .then((response) => {
+          if (response.status === 401) {
+            store.commit("logout");
+            router.push("/login");
+            return;
+          }
+          return response.json();
+        })
+        .then((data) => {
+          if (data) {
+            academicStages.value = data.grades;
+            tests.value = data.tests;
+          }
+        });
     };
 
     const grade = (id: number) => {
@@ -276,14 +280,20 @@ export default defineComponent({
           Authorization: `Bearer ${token}`,
         },
       };
-      Http.request({ method: "DELETE", ...options }).then((response) => {
-        if (response.status === 401) {
-          store.commit("logout");
-          router.push({ name: "Login" });
-          return;
-        }
-        getTests();
-      });
+      fetch(`${BaseUrl}/tests/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((response) => {
+          if (response.status === 401) {
+            store.commit("logout");
+            router.push("/login");
+            return;
+          }
+        })
+        .then((data) => getTests());
     };
 
     onMounted(() => {

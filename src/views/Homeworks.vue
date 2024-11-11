@@ -151,7 +151,6 @@
 </template>
 <script lang="ts">
 import { defineComponent, onMounted, ref, watch } from "vue";
-import { Http } from "@capacitor-community/http";
 import Header from "@/components/Header.vue";
 import HomeworkForm from "@/components/forms/HomeworkForm.vue";
 import { useStore } from "vuex";
@@ -181,6 +180,7 @@ import {
   addCircleOutline,
   eyeOutline,
 } from "ionicons/icons";
+import { get } from "axios";
 
 export default defineComponent({
   name: "Homeworks",
@@ -242,15 +242,26 @@ export default defineComponent({
           Authorization: `Bearer ${token}`,
         },
       };
-      Http.request({ method: "GET", ...options }).then((response) => {
-        if (response.status === 401) {
-          store.commit("logout");
-          router.push({ name: "Login" });
-        }
-
-        academicStages.value = response.data.grades;
-        homeworks.value = response.data.homeworks;
-      });
+      fetch(`${BaseUrl}/homeworks/getall/${stage.value}/${limit.value}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((response) => {
+          if (response.status === 401) {
+            store.commit("logout");
+            router.push("/login");
+            return;
+          }
+          return response.json();
+        })
+        .then((data) => {
+          if (data) {
+            academicStages.value = data.grades;
+            homeworks.value = data.homeworks;
+          }
+        });
     };
 
     const openAddModal = (isOpen: boolean) => {
@@ -272,14 +283,20 @@ export default defineComponent({
           Authorization: `Bearer ${token}`,
         },
       };
-
-      Http.request({ method: "DELETE", ...options }).then((response) => {
-        if (response.status === 401) {
-          store.commit("logout");
-          router.push({ name: "Login" });
-        }
-        getHomeworks();
-      });
+      fetch(`${BaseUrl}/homeworks/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((response) => {
+          if (response.status === 401) {
+            store.commit("logout");
+            router.push("/login");
+            return;
+          }
+        })
+        .then((data) => getHomeworks());
     };
 
     onMounted(() => {

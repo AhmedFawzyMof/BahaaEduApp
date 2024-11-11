@@ -69,7 +69,6 @@
 import { defineComponent, ref, watch } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
-import { Http } from "@capacitor-community/http";
 import { BaseUrl } from "../../utils/BaseUrl";
 
 import { studentType, GradeType } from "../../utils/Types";
@@ -167,35 +166,35 @@ export default defineComponent({
         }
       }
 
-      const options = {
-        url: url,
+      fetch(url, {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        data: student.value,
-      };
-
-      Http.post(options).then((response) => {
-        if (response.status === 401) {
-          store.commit("logout");
-          router.push({ name: "Login" });
-          return;
-        }
-
-        if (response.status === 500) {
-          OpenAlert.value = true;
-          header.value = "خطأ";
-          sub_header.value = "خطأ غير متوقع";
-          message.value = "حدث خطأ غير متوقع، يرجى المحاولة لاحقًا.";
-        }
-
-        if (!props.isEdit) {
-          OpenAlert.value = true;
-          header.value = "تمت العملية بنجاح";
-          sub_header.value = "تم إنشاء طالب بنجاح";
-          message.value = `تم إنشاء طالب بنجاح باسم ${student.value.username}`;
-        }
-      });
+        body: JSON.stringify(student.value),
+      })
+        .then((response) => {
+          if (response.status === 401) {
+            store.commit("logout");
+            router.push("/login");
+            return;
+          }
+          if (response.status === 500) {
+            OpenAlert.value = true;
+            header.value = "خطأ";
+            sub_header.value = "خطأ غير متوقع";
+            message.value = "حدث خطأ غير متوقع، يرجى المحاولة لاحقًا.";
+          }
+          if (!props.isEdit) {
+            OpenAlert.value = true;
+            header.value = "تمت العملية بنجاح";
+            sub_header.value = "تم إنشاء طالب بنجاح";
+            message.value = `تم إنشاء طالب بنجاح باسم ${student.value.username}`;
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching data:", error);
+        });
 
       emit("formSubmitted");
     }
