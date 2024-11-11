@@ -177,7 +177,7 @@ export default defineComponent({
 
       for (const key of Object.keys(test.value)) {
         if (!props.isEdit) {
-          if (key === "cover") {
+          if (key === "cover" || key === "id") {
             continue;
           }
           OpenAlert.value = true;
@@ -199,20 +199,12 @@ export default defineComponent({
         formData.append("id", String(test.value.id));
       }
 
-      const options = {
-        url: url,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        data: formData,
-      };
-
       fetch(url, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify(formData),
+        body: formData,
       })
         .then((response) => {
           if (response.status === 401) {

@@ -146,13 +146,15 @@ export default defineComponent({
       if (props.isEdit) {
         url = BaseUrl + "/student/update";
       }
-
-      for (const key of Object.keys(student.value)) {
+      for (const key of Object.keys(student.value) as Array<
+        keyof typeof student.value
+      >) {
         if (!props.isEdit) {
           if (
-            key !== "isBlocked" &&
-            key !== "BlockReason" &&
-            key !== "parent_phone"
+            key === "isBlocked" ||
+            key === "BlockReason" ||
+            key === "parent_phone" ||
+            key === "id"
           ) {
             continue;
           }

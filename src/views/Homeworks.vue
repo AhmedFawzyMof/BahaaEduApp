@@ -268,6 +268,7 @@ export default defineComponent({
     const openAddModal = (isOpen: boolean) => {
       openAdd.value = isOpen;
       homework.value = {};
+      edit.value = false;
     };
 
     const editHomework = (homeworkData: any, isEdit: boolean) => {

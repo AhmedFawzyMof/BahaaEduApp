@@ -196,6 +196,7 @@ export default defineComponent({
     const openAddModal = (open: boolean) => {
       openAdd.value = open;
       grade.value = {};
+      edit.value = false;
     };
 
     const editGrade = (gradeData: any, isEdit: boolean) => {

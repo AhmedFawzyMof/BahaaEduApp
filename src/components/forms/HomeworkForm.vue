@@ -167,7 +167,7 @@ export default defineComponent({
 
       for (const key of Object.keys(homework.value)) {
         if (!props.isEdit) {
-          if (key === "cover") {
+          if (key === "cover" || key === "id") {
             continue;
           }
           OpenAlert.value = true;
@@ -194,7 +194,7 @@ export default defineComponent({
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify(formData),
+        body: formData,
       })
         .then((response) => {
           if (response.status === 401) {

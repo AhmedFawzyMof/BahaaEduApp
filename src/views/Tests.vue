@@ -265,6 +265,7 @@ export default defineComponent({
     const openAddModal = (isOpen: boolean) => {
       openAdd.value = isOpen;
       test.value = {};
+      edit.value = false;
     };
 
     const editTest = (testData: any, isEdit: boolean) => {
