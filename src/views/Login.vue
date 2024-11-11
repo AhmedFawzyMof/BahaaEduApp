@@ -51,6 +51,7 @@ import { defineComponent, ref, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { Http } from "@capacitor-community/http";
+import { BaseUrl } from "@/utils/BaseUrl";
 
 import {
   IonButtons,
@@ -133,7 +134,7 @@ export default defineComponent({
 
       if (username.value !== "" && password.value !== "") {
         const options = {
-          url: "http://localhost:3000/api/teacher/login",
+          url: BaseUrl + "/teacher/login",
           headers: {
             "Content-Type": "application/json",
           },
