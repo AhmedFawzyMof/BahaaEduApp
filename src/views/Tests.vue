@@ -233,6 +233,7 @@ export default defineComponent({
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       })
         .then((response) => {
@@ -284,6 +285,7 @@ export default defineComponent({
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       })
         .then((response) => {

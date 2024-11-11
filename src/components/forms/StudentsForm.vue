@@ -170,10 +170,12 @@ export default defineComponent({
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(student.value),
       })
         .then((response) => {
+          console.log(response);
           if (response.status === 401) {
             store.commit("logout");
             router.push("/login");
@@ -191,6 +193,7 @@ export default defineComponent({
             sub_header.value = "تم إنشاء طالب بنجاح";
             message.value = `تم إنشاء طالب بنجاح باسم ${student.value.username}`;
           }
+          return response.json();
         })
         .catch((error) => {
           console.error("Error fetching data:", error);

@@ -246,6 +246,7 @@ export default defineComponent({
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       })
         .then((response) => {
@@ -281,6 +282,7 @@ export default defineComponent({
         url: `${BaseUrl}/homeworks/${id}`,
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       };
       fetch(`${BaseUrl}/homeworks/${id}`, {
