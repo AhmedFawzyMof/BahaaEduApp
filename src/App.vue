@@ -6,7 +6,7 @@
           <ion-list id="inbox-list" dir="rtl">
             <ion-list-header>Bahaa Education</ion-list-header>
 
-            <ion-menu-toggle :auto-hide="false" v-if="isAuthenticated">
+            <ion-menu-toggle v-if="isAuthenticated">
               <ion-item
                 v-for="link in listOfPages"
                 router-direction="root"
@@ -15,11 +15,7 @@
                 :detail="false"
                 class="hydrated"
               >
-                <ion-icon
-                  aria-hidden="true"
-                  slot="start"
-                  :icon="link.icon"
-                ></ion-icon>
+                <ion-icon slot="start" :icon="link.icon"></ion-icon>
                 <ion-label style="font-family: Cairo">{{
                   link.title
                 }}</ion-label>
@@ -56,6 +52,7 @@ import {
   peopleOutline,
   bookOutline,
   bookmarksOutline,
+  videocamOutline,
 } from "ionicons/icons";
 
 interface Page {
@@ -90,11 +87,13 @@ export default defineComponent({
       { title: "الطلاب", url: "/students", icon: peopleOutline },
       { title: "الواجبات", url: "/homeworks", icon: bookOutline },
       { title: "الاختبارات", url: "/tests", icon: bookOutline },
+      { title: "الاختبارات العامة", url: "/publictests", icon: bookOutline },
       { title: "مراحل الدراسية", url: "/grades", icon: bookmarksOutline },
+      { title: "اسئلة", url: "/questions", icon: bookmarksOutline },
+      { title: "فيديوهات", url: "/videos", icon: videocamOutline },
     ]);
 
     onMounted(() => {
-      console.log(store.state.isAuthenticated);
       store.commit("initializeStore");
       store.commit("isLoggedIn", router);
     });

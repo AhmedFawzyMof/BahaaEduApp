@@ -6,6 +6,7 @@
         color="primary"
         expand="block"
         @click="openAddModal(!openAdd)"
+        style="margin: 0 10px"
       >
         <ion-icon slot="icon-only" :icon="addCircleOutlineIcon"></ion-icon>
         <p style="margin-left: 10px">اضافة مرحلة</p>
@@ -27,7 +28,7 @@
                 <ion-grid v-if="grades.length > 0">
                   <ion-row
                     class="table-header"
-                    style="border-bottom: 1px solid #ccc; min-width: 100%"
+                    style="border-bottom: 1px solid #ccc; min-width: 250px"
                   >
                     <ion-col class="header-cell" style="white-space: nowrap"
                       >الاسم</ion-col
@@ -47,7 +48,7 @@
                         : 'border-bottom: 1px solid #ccc'
                     }`"
                     class="ion-align-items-start"
-                    style="min-width: 100%"
+                    style="min-width: 250px"
                   >
                     <ion-col
                       class="data-cell"
@@ -55,6 +56,7 @@
                         white-space: nowrap;
                         display: grid;
                         place-items: center;
+                        min-width: 150px;
                       "
                     >
                       {{ grade.grade_name }}
@@ -65,6 +67,7 @@
                         white-space: nowrap;
                         display: grid;
                         place-items: center;
+                        min-width: 100px;
                       "
                     >
                       <div class="buttons">
@@ -251,7 +254,7 @@ export default defineComponent({
 
 .table-wrapper {
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
   padding: 8px;
 }
 

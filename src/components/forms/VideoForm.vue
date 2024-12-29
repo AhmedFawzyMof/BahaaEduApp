@@ -1,7 +1,7 @@
 <template>
   <ion-card dir="rtl" v-if="isOpen">
     <ion-card-header>
-      <ion-card-title>بيانات الاختبار</ion-card-title>
+      <ion-card-title>بيانات الفيديو</ion-card-title>
     </ion-card-header>
 
     <ion-card-content>
@@ -9,16 +9,24 @@
         <ion-label
           position="floating"
           style="font-family: Cairo; margin-bottom: 15px"
-          >عنوان الاختبار</ion-label
+          >عنوان الفيديو</ion-label
         >
-        <ion-input type="text" v-model="test.test_name"></ion-input>
+        <ion-input type="text" v-model="video.title"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label
+          position="floating"
+          style="font-family: Cairo; margin-bottom: 15px"
+          >عنوان الرابط</ion-label
+        >
+        <ion-input type="text" v-model="video.link"></ion-input>
       </ion-item>
 
       <ion-item dir="ltr">
         <ion-select
           label="مرحلة الدراسية"
           label-placement="stacked"
-          v-model="test.grade"
+          v-model="video.grade_id"
           placeholder="اختر مرحلة الدراسية"
           dir="rtl"
         >
@@ -32,7 +40,7 @@
         <ion-select
           label="مرحلة الدراسية"
           label-placement="stacked"
-          v-model="test.term_id"
+          v-model="video.term_id"
           placeholder="اختر فترة/ترم"
           dir="rtl"
         >
@@ -40,32 +48,6 @@
             {{ t.term_name }}
           </ion-select-option>
         </ion-select>
-      </ion-item>
-
-      <ion-item>
-        <ion-label
-          position="floating"
-          style="font-family: Cairo; margin-bottom: 1rem"
-        >
-          اظهره في
-        </ion-label>
-        <ion-input type="datetime-local" v-model="test.created_at" />
-      </ion-item>
-      <ion-item>
-        <ion-label
-          position="floating"
-          style="font-family: Cairo; margin-bottom: 1rem"
-        >
-          تاريخ انتهاء الامتحان
-        </ion-label>
-        <ion-input type="datetime-local" v-model="test.expire_date" />
-      </ion-item>
-
-      <ion-item v-if="!isEdit">
-        <div class="input">
-          <label> صورة الغلاف </label>
-          <input type="file" @change="handleFileChange" />
-        </div>
       </ion-item>
 
       <ion-button expand="block" color="primary" @click="submitForm">
@@ -87,7 +69,7 @@ import { defineComponent, ref, watch } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { BaseUrl } from "../../utils/BaseUrl";
-import { GradeType, TermType, testType } from "../../utils/Types";
+import { videoType, GradeType, TermType } from "../../utils/Types";
 
 import {
   IonCard,
@@ -107,11 +89,11 @@ import {
 } from "@ionic/vue";
 
 export default defineComponent({
-  name: "TestForm",
+  name: "VideoForm",
   props: {
     isOpen: Boolean,
     isEdit: Boolean,
-    Test: Object,
+    Video: Object,
     Grades: {
       type: Array as () => GradeType[],
       required: true,
@@ -146,45 +128,38 @@ export default defineComponent({
     const sub_header = ref<string>("");
     const message = ref<string>("");
     const alertButtons = ref<string[]>(["موافق"]);
-    const test = ref<testType>({
+    const video = ref<videoType>({
       id: 0,
-      test_name: "",
-      grade: 0,
-      created_at: "",
-      expire_date: "",
+      title: "",
+      link: "",
+      grade_id: 0,
       term_id: 0,
-      cover: null,
     });
 
     function setOpen(isOpen: boolean) {
       OpenAlert.value = isOpen;
     }
 
-    function handleFileChange(event: any) {
-      const file = event.target.files[0];
-      console.log(event);
-      if (file) {
-        test.value.cover = file;
-      } else {
-        test.value.cover = null;
-      }
-    }
-
     function submitForm() {
-      let url = BaseUrl + "/tests/create";
+      let url = BaseUrl + "/videos/create";
+
+      const formData: videoType = {
+        title: video.value.title,
+        link: video.value.link,
+        grade_id: video.value.grade_id,
+        term_id: video.value.term_id,
+      };
 
       if (props.isEdit) {
-        url = BaseUrl + "/tests/updates";
+        url = BaseUrl + "/videos/updates";
+        formData.id = video.value.id;
       }
 
-      for (const key of Object.keys(test.value) as Array<
-        keyof typeof test.value
+      for (const key of Object.keys(video.value) as Array<
+        keyof typeof video.value
       >) {
         if (!props.isEdit) {
-          if (key === "cover" || key === "id") {
-            continue;
-          }
-          if (test.value[key] === "") {
+          if (video.value[key] === "") {
             OpenAlert.value = true;
             header.value = "خطأ";
             sub_header.value = "لقد حدث خطأ ما";
@@ -194,26 +169,18 @@ export default defineComponent({
         }
       }
 
-      const formData = new FormData();
-      formData.append("test_name", test.value.test_name);
-      formData.append("grade", String(test.value.grade));
-      formData.append("term_id", String(test.value.term_id));
-      formData.append("created_at", test.value.created_at);
-      formData.append("expire_date", test.value.expire_date);
-      if (!props.isEdit && test.value.cover) {
-        formData.append("cover", test.value.cover);
-      } else {
-        formData.append("id", String(test.value.id));
-      }
+      console.log(formData);
 
       fetch(url, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
         },
-        body: formData,
+        body: JSON.stringify(formData),
       })
         .then((response) => {
+          console.log(response);
           if (response.status === 401) {
             store.commit("logout");
             router.push("/login");
@@ -228,8 +195,8 @@ export default defineComponent({
           if (!props.isEdit) {
             OpenAlert.value = true;
             header.value = "تمت العملية بنجاح";
-            sub_header.value = "تم إنشاء الاختبار بنجاح";
-            message.value = `تم إنشاء الاختبار بنجاح بعنوان ${test.value.test_name}`;
+            sub_header.value = "تم إنشاء الواجب بنجاح";
+            message.value = `تم إنشاء الواجب بنجاح بعنوان ${video.value.title}`;
           }
         })
         .catch((error) => {
@@ -239,33 +206,30 @@ export default defineComponent({
     }
 
     watch(
-      () => props.Test,
+      () => props.Video,
       (newVal) => {
         if (!props.isEdit) {
-          test.value = {
+          video.value = {
             id: 0,
-            test_name: "",
-            grade: 0,
-            created_at: "",
-            expire_date: "",
+            title: "",
+            link: "",
+            grade_id: 0,
             term_id: 0,
-            cover: null,
           };
         }
         if (props.isEdit && newVal) {
-          test.value.id = newVal.id;
-          test.value.test_name = newVal.test_name;
-          test.value.grade = newVal.grade_id;
-          test.value.created_at = newVal.created_at;
-          test.value.expire_date = newVal.expire_date;
-          test.value.term_id = newVal.term_id;
+          video.value.id = newVal.id;
+          video.value.title = newVal.title;
+          video.value.link = newVal.link;
+          video.value.grade_id = newVal.grade_id;
+          video.value.term_id = newVal.term_id;
         }
       },
       { immediate: true }
     );
 
     return {
-      test,
+      video,
       store,
       router,
       OpenAlert,
@@ -275,7 +239,6 @@ export default defineComponent({
       alertButtons,
       setOpen,
       submitForm,
-      handleFileChange,
     };
   },
 });

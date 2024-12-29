@@ -6,7 +6,9 @@
 
     <ion-card-content>
       <ion-item>
-        <ion-label position="floating" style="font-family: Cairo"
+        <ion-label
+          position="floating"
+          style="font-family: Cairo; margin-bottom: 15px"
           >اسم المستخدم</ion-label
         >
         <ion-input type="text" v-model="student.username"></ion-input>
@@ -207,6 +209,17 @@ export default defineComponent({
     watch(
       () => props.Student,
       (newVal) => {
+        if (!props.isEdit) {
+          student.value = {
+            id: 0,
+            username: "",
+            password: "",
+            grade: 0,
+            isBlocked: false,
+            parent_phone: "",
+            BlockReason: "",
+          };
+        }
         if (props.isEdit && newVal) {
           student.value.id = newVal.id;
           student.value.username = newVal.username;

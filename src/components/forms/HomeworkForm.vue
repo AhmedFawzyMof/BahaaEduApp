@@ -6,7 +6,9 @@
 
     <ion-card-content>
       <ion-item>
-        <ion-label position="floating" style="font-family: Cairo"
+        <ion-label
+          position="floating"
+          style="font-family: Cairo; margin-bottom: 15px"
           >عنوان الواجب المنزلي</ion-label
         >
         <ion-input type="text" v-model="homework.homework_name"></ion-input>
@@ -165,16 +167,20 @@ export default defineComponent({
         url = BaseUrl + "/homeworks/updates";
       }
 
-      for (const key of Object.keys(homework.value)) {
+      for (const key of Object.keys(homework.value) as Array<
+        keyof typeof homework.value
+      >) {
         if (!props.isEdit) {
           if (key === "cover" || key === "id") {
             continue;
           }
-          OpenAlert.value = true;
-          header.value = "خطأ";
-          sub_header.value = "لقد حدث خطأ ما";
-          message.value = "يجب عليك تعبئة جميع الحقول";
-          return;
+          if (homework.value[key] === "") {
+            OpenAlert.value = true;
+            header.value = "خطأ";
+            sub_header.value = "لقد حدث خطأ ما";
+            message.value = "يجب عليك تعبئة جميع الحقول";
+            return;
+          }
         }
       }
 
@@ -224,6 +230,16 @@ export default defineComponent({
     watch(
       () => props.Homework,
       (newVal) => {
+        if (!props.isEdit) {
+          homework.value = {
+            id: 0,
+            homework_name: "",
+            grade: 0,
+            created_at: "",
+            term_id: 0,
+            cover: null,
+          };
+        }
         if (props.isEdit && newVal) {
           homework.value.id = newVal.id;
           homework.value.homework_name = newVal.homework_name;

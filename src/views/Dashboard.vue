@@ -39,7 +39,11 @@
 
         <ion-card-content>
           <ion-list>
-            <ion-item v-for="student in outStanding" :key="student.id">
+            <ion-item
+              v-if="outStanding.length > 0"
+              v-for="student in outStanding"
+              :key="student.id"
+            >
               <div class="student">
                 <div class="char">
                   {{ student.username[0] }}
@@ -54,6 +58,9 @@
                   </div>
                 </div>
               </div>
+            </ion-item>
+            <ion-item v-else>
+              <p>لا يوجد بيانات متاحة</p>
             </ion-item>
           </ion-list>
         </ion-card-content>
@@ -107,7 +114,7 @@ export default defineComponent({
     const num_users = ref<number>(0);
     const average_result = ref<number>(0);
     const pass_rate = ref<number>(0);
-    const outStanding = ref<Array<any>>([]); // Replace 'any' with specific student type if available
+    const outStanding = ref<Array<any>>([]);
 
     onMounted(() => {
       store.commit("initializeStore");
@@ -144,6 +151,14 @@ export default defineComponent({
               (dashboard.PassRate.number_of_pass /
                 dashboard.PassRate.total_students) *
               100;
+
+            if (typeof pass_rate.value !== "number") {
+              pass_rate.value = 0;
+            }
+
+            if (average_result.value === null) {
+              average_result.value = 0;
+            }
           }
         })
         .catch((error) => {
